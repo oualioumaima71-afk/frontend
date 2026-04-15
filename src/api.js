@@ -1,7 +1,9 @@
 import axios from 'axios';
 
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://flowvia43-1.onrender.com/api';
+
 const api = axios.create({
-  baseURL: 'http://localhost:5000/api', // ajusté pour correspondre au port 5000 du backend
+  baseURL: API_BASE_URL,
 });
 
 api.interceptors.request.use(config => {

@@ -72,7 +72,7 @@ function Layout({ children, role }) {
               🔔
               {notifCount > 0 && <div className="notif-red-dot">1</div>}
               {showNotif && (
-                <div style={{ position: 'absolute', top: '50px', right: 0, width: '250px', background: 'white', padding: '16px', borderRadius: '12px', boxShadow: '0 8px 16px rgba(0,0,0,0.1)', color: '#333', fontSize: '13px', zIndex: 1000 }}>
+                <div style={{ position: 'absolute', top: '50px', right: 0, width: 'min(250px, calc(100vw - 24px))', background: 'white', padding: '16px', borderRadius: '12px', boxShadow: '0 8px 16px rgba(0,0,0,0.1)', color: '#333', fontSize: '13px', zIndex: 1000 }}>
                   <strong>Nouveau Message</strong><br />
                   <span style={{ display: 'block', marginTop: '8px' }}>{notifMessage}</span>
                 </div>

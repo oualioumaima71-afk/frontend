@@ -65,6 +65,30 @@ This section has moved here: [https://facebook.github.io/create-react-app/docs/a
 
 This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
 
+## Netlify Setup
+
+This project is ready to be deployed on Netlify.
+
+1. Build settings:
+	- Build command: `npm run build`
+	- Publish directory: `build`
+2. SPA routing is already configured with:
+	- `netlify.toml`
+	- `public/_redirects`
+3. Environment variable to configure in Netlify:
+	- `REACT_APP_API_URL=https://flowvia43-1.onrender.com/api`
+
+The API client in `src/api.js` uses `REACT_APP_API_URL` first, then falls back to `https://flowvia43-1.onrender.com/api`.
+
+## Mobile Responsiveness
+
+Responsive behavior has been reinforced while preserving the current visual style:
+
+1. Global responsive rules in `src/index.css`
+2. Responsive home hero layout in `src/pages/Home.js`
+3. Responsive auth card widths in `src/pages/Login.js` and `src/pages/Register.js`
+4. Responsive home navbar/footer and notification popup sizing
+
 ### `npm run build` fails to minify
 
 This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)

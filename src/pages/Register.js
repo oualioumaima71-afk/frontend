@@ -32,7 +32,7 @@ function Register() {
       <HomeNavbar />
 
       <div style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '40px 20px' }}>
-        <div className="card" style={{ width: '320px', padding: '24px' }}>
+        <div className="card" style={{ width: 'min(100%, 320px)', padding: 'clamp(16px, 4vw, 24px)' }}>
           <h2 style={{ textAlign: 'center', marginBottom: '8px' }}>Créer un profil Patient</h2>
           <p style={{ textAlign: 'center', color: 'var(--text-muted)', marginBottom: '24px', fontSize: '12px' }}>Commencez votre rééducation avec Flowvia</p>
           

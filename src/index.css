@@ -450,3 +450,114 @@ label {
   from { transform: translateY(0); opacity: 1; }
   to { transform: translateY(-10px); opacity: 0; }
 }
+
+@media (max-width: 768px) {
+  .navbar {
+    height: auto;
+    min-height: 56px;
+    padding: 10px 12px;
+    gap: 10px;
+  }
+
+  .navbar-logo {
+    font-size: 1.2rem;
+  }
+
+  .navbar-actions {
+    gap: 10px;
+  }
+
+  .layout-body {
+    flex-direction: column;
+  }
+
+  .sidebar,
+  .sidebar:hover {
+    width: 100%;
+    padding: 10px 12px;
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .sidebar-nav {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .sidebar-nav li {
+    flex: 1 1 140px;
+  }
+
+  .sidebar-nav li a {
+    padding: 10px 12px;
+    gap: 10px;
+  }
+
+  .sidebar-text,
+  .sidebar:hover .sidebar-text {
+    opacity: 1;
+    transition-delay: 0s;
+  }
+
+  .sidebar-footer {
+    margin-top: 12px;
+    border-top: none;
+    padding-top: 0;
+  }
+
+  .main-container {
+    padding: 16px 12px;
+  }
+
+  .motivation-banner {
+    padding: 16px;
+    margin-bottom: 20px;
+    gap: 12px;
+  }
+
+  .toast-container {
+    top: 10px;
+    left: 12px;
+    right: 12px;
+    transform: none;
+  }
+
+  .toast {
+    min-width: 0;
+    width: 100%;
+    border-radius: 14px;
+  }
+}
+
+@media (max-width: 480px) {
+  .navbar {
+    padding: 8px 10px;
+  }
+
+  .user-name {
+    max-width: 90px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .sidebar-nav li {
+    flex: 1 1 100%;
+  }
+
+  .main-container {
+    padding: 12px 10px;
+  }
+
+  .card {
+    padding: 14px;
+    margin-bottom: 14px;
+  }
+
+  .btn {
+    width: 100%;
+  }
+}
