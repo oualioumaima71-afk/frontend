@@ -58,7 +58,7 @@ function PatientSessionDetail() {
 
   return (
     <Layout role="patient">
-      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
+      <div className="session-header" style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
         <Link to="/patient/sessions" className="btn btn-secondary" style={{ padding: '6px 12px', borderRadius: '8px' }}>← Retour</Link>
         <h1 style={{ margin: 0 }}>{session.title}</h1>
         <span style={{ fontSize: '12px', padding: '4px 10px', background: session.status === 'completed' ? '#e8f5e9' : '#fff3e0', color: session.status === 'completed' ? 'var(--primary)' : '#e65100', borderRadius: '12px', fontWeight: '600' }}>{sessionStatusLabel}</span>
@@ -66,9 +66,9 @@ function PatientSessionDetail() {
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '0' }}>
         {session.exercises.map((ex, index) => (
-          <div key={ex._id} className="card" style={{ display: 'flex', flexWrap: 'wrap', gap: '24px', padding: '24px', alignItems: 'flex-start' }}>
+          <div key={ex._id} className="card session-exercise-card" style={{ display: 'flex', flexWrap: 'wrap', gap: '24px', padding: '24px', alignItems: 'flex-start' }}>
             {ex.videoPath && (
-              <div style={{ flex: '1 1 250px', background: '#000', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}>
+              <div className="session-video-wrap" style={{ flex: '1 1 250px', background: '#000', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}>
                 {(ex.videoPath.includes('youtube') || ex.videoPath.includes('vimeo')) ? (
                   <iframe width="100%" height="200" src={resolveVideoSrc(ex.videoPath)} title={ex.title} frameBorder="0" allowFullScreen style={{display:'block'}}></iframe>
                 ) : (
@@ -77,18 +77,18 @@ function PatientSessionDetail() {
               </div>
             )}
             
-            <div style={{ flex: '2 1 300px' }}>
+            <div className="session-exercise-content" style={{ flex: '2 1 300px' }}>
               <div style={{ color: 'var(--text-muted)', fontSize: '12px', fontWeight: 'bold', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '1px' }}>Exercice {index + 1}</div>
               <h2 style={{ margin: '0 0 12px 0', fontSize: '1.25rem', color: 'var(--text)' }}>{ex.title}</h2>
               <p style={{ margin: '0 0 16px 0', fontSize: '14px', color: '#4a5568', lineHeight: '1.6' }}>{ex.description}</p>
               
-              <div style={{ display: 'flex', gap: '16px', marginBottom: '24px' }}>
+              <div className="session-meta-row" style={{ display: 'flex', gap: '16px', marginBottom: '24px' }}>
                 <span style={{ display: 'inline-flex', alignItems: 'center', background: '#f8f9fa', padding: '6px 12px', borderRadius: '20px', fontSize: '13px', fontWeight: '500', color: 'var(--primary)' }}>⏱ {ex.duration} secondes</span>
                 <span style={{ display: 'inline-flex', alignItems: 'center', background: '#f8f9fa', padding: '6px 12px', borderRadius: '20px', fontSize: '13px', fontWeight: '500', color: 'var(--primary)' }}>🔄 {ex.repetitions} répétitions</span>
               </div>
               
               {session.status !== 'completed' ? (
-                <div style={{ display: 'flex', gap: '12px' }}>
+                <div className="session-validation-row" style={{ display: 'flex', gap: '12px' }}>
                   <button onClick={() => validateExercise(ex._id, 'fait')} className="btn" style={{ flex: 1, padding: '12px', fontSize: '14px', background: ex.validationStatus === 'fait' ? 'var(--primary)' : '#e9ecef', color: ex.validationStatus === 'fait' ? 'white' : 'var(--text)', boxShadow: 'none' }}>✓ J'ai réussi</button>
                   <button onClick={() => validateExercise(ex._id, 'non fait')} className="btn" style={{ flex: 1, padding: '12px', fontSize: '14px', background: ex.validationStatus === 'non fait' ? '#e53935' : '#e9ecef', color: ex.validationStatus === 'non fait' ? 'white' : 'var(--text)', boxShadow: 'none' }}>✗ Trop difficile</button>
                 </div>
@@ -103,12 +103,65 @@ function PatientSessionDetail() {
       </div>
 
       {session.status !== 'completed' && (
-        <div style={{ marginTop: '24px', display: 'flex', justifyContent: 'flex-end' }}>
+        <div className="session-complete-row" style={{ marginTop: '24px', display: 'flex', justifyContent: 'flex-end' }}>
           <button onClick={completeSession} disabled={!allCompleted} className="btn" style={{ padding: '14px 32px', fontSize: '16px', opacity: allCompleted ? 1 : 0.4 }}>
             Valider
           </button>
         </div>
       )}
+
+      <style>{`
+        @media (max-width: 900px) {
+          .session-header {
+            flex-wrap: wrap;
+            align-items: center;
+          }
+
+          .session-exercise-card {
+            gap: 16px !important;
+            padding: 18px !important;
+          }
+
+          .session-video-wrap,
+          .session-exercise-content {
+            flex: 1 1 100% !important;
+          }
+
+          .session-meta-row,
+          .session-validation-row {
+            flex-wrap: wrap;
+          }
+        }
+
+        @media (max-width: 640px) {
+          .session-header h1 {
+            width: 100%;
+            font-size: 1.55rem;
+          }
+
+          .session-meta-row {
+            gap: 10px !important;
+            margin-bottom: 16px !important;
+          }
+
+          .session-meta-row span {
+            width: 100%;
+            justify-content: center;
+          }
+
+          .session-validation-row {
+            flex-direction: column;
+          }
+
+          .session-complete-row {
+            justify-content: stretch !important;
+          }
+
+          .session-complete-row .btn {
+            width: 100%;
+          }
+        }
+      `}</style>
     </Layout>
   );
 }

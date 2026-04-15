@@ -5,6 +5,7 @@ import Toast from './Toast';
 function Layout({ children, role }) {
   const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem('user'));
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   // Notification logic placeholder : dot active si un message de motivation n'a pas été lu,
   // ou simplement afficher un modal au clic.
@@ -40,6 +41,28 @@ function Layout({ children, role }) {
     return () => window.removeEventListener('new_notification', checkNotif);
   }, []);
 
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth > 768) {
+        setIsMobileMenuOpen(false);
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  useEffect(() => {
+    const previousOverflow = document.body.style.overflow;
+    if (isMobileMenuOpen) {
+      document.body.style.overflow = 'hidden';
+    }
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [isMobileMenuOpen]);
+
   const handleNotifClick = () => {
     setShowNotif(!showNotif);
     if (!showNotif && notifCount > 0) {
@@ -49,9 +72,18 @@ function Layout({ children, role }) {
   };
 
   const handleLogout = () => {
+    setIsMobileMenuOpen(false);
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     navigate('/login');
+  };
+
+  const toggleMobileMenu = () => {
+    setIsMobileMenuOpen(prev => !prev);
+  };
+
+  const closeMobileMenu = () => {
+    setIsMobileMenuOpen(false);
   };
 
   return (
@@ -62,9 +94,20 @@ function Layout({ children, role }) {
         </div>
       )}
       <nav className="navbar">
-        <Link to={user ? `/${user.role}/dashboard` : "/"} className="navbar-logo" style={{ textDecoration: 'none' }}>
-          <span style={{ fontSize: '24px' }}>🌿</span> Flowvia
-        </Link>
+        <div className="navbar-left">
+          <button
+            type="button"
+            className="mobile-menu-btn"
+            onClick={toggleMobileMenu}
+            aria-label={isMobileMenuOpen ? 'Fermer le menu' : 'Ouvrir le menu'}
+            aria-expanded={isMobileMenuOpen}
+          >
+            {isMobileMenuOpen ? '✕' : '☰'}
+          </button>
+          <Link to={user ? `/${user.role}/dashboard` : "/"} className="navbar-logo" style={{ textDecoration: 'none' }}>
+            <span style={{ fontSize: '24px' }}>🌿</span> Flowvia
+          </Link>
+        </div>
 
         <div className="navbar-actions">
           {role === 'patient' && (
@@ -89,24 +132,31 @@ function Layout({ children, role }) {
         </div>
       </nav>
 
-      <div className="layout-body">
-        <aside className="sidebar">
+      <div className={`layout-body ${isMobileMenuOpen ? 'mobile-menu-open' : ''}`}>
+        <button
+          type="button"
+          className={`mobile-sidebar-overlay ${isMobileMenuOpen ? 'show' : ''}`}
+          onClick={closeMobileMenu}
+          aria-label="Fermer le menu latéral"
+        />
+
+        <aside className={`sidebar ${isMobileMenuOpen ? 'open' : ''}`}>
           <ul className="sidebar-nav">
             <li>
-              <NavLink to={`/${role}/dashboard`} className={({ isActive }) => isActive ? 'active' : ''}>
+              <NavLink to={`/${role}/dashboard`} className={({ isActive }) => isActive ? 'active' : ''} onClick={closeMobileMenu}>
                 <span className="icon">📊</span> <span className="sidebar-text">Dashboard</span>
               </NavLink>
             </li>
             {role === 'patient' && (
               <li>
-                <NavLink to="/patient/sessions" className={({ isActive }) => isActive ? 'active' : ''}>
+                <NavLink to="/patient/sessions" className={({ isActive }) => isActive ? 'active' : ''} onClick={closeMobileMenu}>
                   <span className="icon">📅</span> <span className="sidebar-text">Mes Séances</span>
                 </NavLink>
               </li>
             )}
             {role === 'therapist' && (
               <li>
-                <NavLink to="/therapist/sessions/manage" className={({ isActive }) => isActive ? 'active' : ''}>
+                <NavLink to="/therapist/sessions/manage" className={({ isActive }) => isActive ? 'active' : ''} onClick={closeMobileMenu}>
                   <span className="icon">📝</span> <span className="sidebar-text">Mes Programmes</span>
                 </NavLink>
               </li>
