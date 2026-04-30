@@ -13,6 +13,27 @@ const resolveVideoSrc = (videoPath) => {
   return `${BACKEND_ORIGIN}${normalizedPath}`;
 };
 
+const getYouTubeVideoId = (input = '') => {
+  const url = String(input || '').trim();
+  if (!url) return null;
+
+  // Matches:
+  // - https://www.youtube.com/watch?v=VIDEO_ID
+  // - https://youtu.be/VIDEO_ID
+  // - https://www.youtube.com/shorts/VIDEO_ID
+  // - https://www.youtube.com/embed/VIDEO_ID
+  const match = url.match(
+    /(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([A-Za-z0-9_-]{11})/i
+  );
+  return match ? match[1] : null;
+};
+
+const toYouTubeEmbedSrc = (input = '') => {
+  const id = getYouTubeVideoId(input);
+  if (!id) return '';
+  return `https://www.youtube-nocookie.com/embed/${id}?rel=0`;
+};
+
 function PatientSessionDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -69,8 +90,17 @@ function PatientSessionDetail() {
           <div key={ex._id} className="card session-exercise-card" style={{ display: 'flex', flexWrap: 'wrap', gap: '24px', padding: '24px', alignItems: 'flex-start' }}>
             {ex.videoPath && (
               <div className="session-video-wrap" style={{ flex: '1 1 250px', background: '#000', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}>
-                {(ex.videoPath.includes('youtube') || ex.videoPath.includes('vimeo')) ? (
-                  <iframe width="100%" height="200" src={resolveVideoSrc(ex.videoPath)} title={ex.title} frameBorder="0" allowFullScreen style={{display:'block'}}></iframe>
+                {(getYouTubeVideoId(ex.videoPath) || ex.videoPath.includes('vimeo')) ? (
+                  <iframe
+                    width="100%"
+                    height="200"
+                    src={getYouTubeVideoId(ex.videoPath) ? toYouTubeEmbedSrc(ex.videoPath) : resolveVideoSrc(ex.videoPath)}
+                    title={ex.title}
+                    frameBorder="0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                    allowFullScreen
+                    style={{display:'block'}}
+                  />
                 ) : (
                   <video width="100%" height="200" controls style={{display:'block', objectFit: 'cover'}} src={resolveVideoSrc(ex.videoPath)} />
                 )}
