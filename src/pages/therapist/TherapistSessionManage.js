@@ -8,7 +8,6 @@ function TherapistSessionManage() {
 
   const [exTitle, setExTitle] = useState('');
   const [videoFile, setVideoFile] = useState(null);
-  const [videoFile, setVideoFile] = useState(null);
   const [description, setDescription] = useState('');
   const [duration, setDuration] = useState('');
   const [repetitions, setRepetitions] = useState('');
