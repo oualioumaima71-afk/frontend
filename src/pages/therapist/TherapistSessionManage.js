@@ -14,6 +14,8 @@ function TherapistSessionManage() {
 
   const [existingSessions, setExistingSessions] = useState([]);
   const [editingId, setEditingId] = useState(null);
+  const [uploading, setUploading] = useState(false);
+  const [progress, setProgress] = useState(0);
 
   useEffect(() => {
     fetchSessions();
@@ -67,12 +69,22 @@ function TherapistSessionManage() {
       }
     });
 
+    setUploading(true);
+    setProgress(0);
+
     try {
+      const config = {
+        onUploadProgress: (progressEvent) => {
+          const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+          setProgress(percentCompleted);
+        },
+      };
+
       if (editingId) {
-        await api.put(`/therapist/sessions/${editingId}`, formData);
+        await api.put(`/therapist/sessions/${editingId}`, formData, config);
         window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: 'Programme mis à jour !', type: 'success' } }));
       } else {
-        await api.post('/therapist/sessions', formData);
+        await api.post('/therapist/sessions', formData, config);
         window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: 'Programme créé avec succès !', type: 'success' } }));
       }
       resetForm();
@@ -80,6 +92,9 @@ function TherapistSessionManage() {
     } catch (err) {
       const backendMsg = err?.response?.data?.message;
       window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: backendMsg || "Erreur lors de l'enregistrement", type: 'error' } }));
+    } finally {
+      setUploading(false);
+      setProgress(0);
     }
   };
 
@@ -172,13 +187,43 @@ function TherapistSessionManage() {
                 ))}
               </ul>
             )}
-            <button onClick={createSession} className="btn" style={{ width: '100%', padding: '14px', fontSize: '15px' }}>
-              {editingId ? 'Mettre à jour le programme' : 'Enregistrer la séance'}
-            </button>
-            {editingId && (
-              <button onClick={resetForm} className="btn btn-secondary" style={{ width: '100%', marginTop: '12px' }}>
-                Annuler la modification
-              </button>
+            {uploading && (
+              <div style={{ marginTop: '20px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '13px' }}>
+                  <span style={{ fontWeight: '600', color: 'var(--primary)' }}>
+                    {progress < 100 ? `Upload en cours : ${progress}%` : 'Traitement par Google Drive...'}
+                  </span>
+                </div>
+                <div style={{ width: '100%', height: '8px', backgroundColor: '#e9ecef', borderRadius: '4px', overflow: 'hidden' }}>
+                  <div 
+                    style={{ 
+                      width: `${progress}%`, 
+                      height: '100%', 
+                      backgroundColor: 'var(--primary)', 
+                      transition: 'width 0.3s ease',
+                      backgroundImage: progress === 100 ? 'linear-gradient(45deg, rgba(255,255,255,.15) 25%, transparent 25%, transparent 50%, rgba(255,255,255,.15) 50%, rgba(255,255,255,.15) 75%, transparent 75%, transparent)' : 'none',
+                      backgroundSize: '1rem 1rem',
+                      animation: progress === 100 ? 'progress-bar-stripes 1s linear infinite' : 'none'
+                    }} 
+                  />
+                </div>
+                <p style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '6px' }}>
+                  Veuillez ne pas fermer cette page pendant l'envoi.
+                </p>
+              </div>
+            )}
+
+            {!uploading && (
+              <>
+                <button onClick={createSession} className="btn" style={{ width: '100%', padding: '14px', fontSize: '15px' }}>
+                  {editingId ? 'Mettre à jour le programme' : 'Enregistrer la séance'}
+                </button>
+                {editingId && (
+                  <button onClick={resetForm} className="btn btn-secondary" style={{ width: '100%', marginTop: '12px' }}>
+                    Annuler la modification
+                  </button>
+                )}
+              </>
             )}
           </div>
         </div>
@@ -203,6 +248,12 @@ function TherapistSessionManage() {
           ))}
         </div>
       </div>
+      <style>{`
+        @keyframes progress-bar-stripes {
+          from { background-position: 1rem 0; }
+          to { background-position: 0 0; }
+        }
+      `}</style>
     </Layout>
   );
 }
