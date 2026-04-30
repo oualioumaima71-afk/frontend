@@ -13,25 +13,23 @@ const resolveVideoSrc = (videoPath) => {
   return `${BACKEND_ORIGIN}${normalizedPath}`;
 };
 
-const getYouTubeVideoId = (input = '') => {
+const toEmbedSrc = (input = '') => {
   const url = String(input || '').trim();
-  if (!url) return null;
+  if (!url) return '';
 
-  // Matches:
-  // - https://www.youtube.com/watch?v=VIDEO_ID
-  // - https://youtu.be/VIDEO_ID
-  // - https://www.youtube.com/shorts/VIDEO_ID
-  // - https://www.youtube.com/embed/VIDEO_ID
-  const match = url.match(
-    /(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([A-Za-z0-9_-]{11})/i
-  );
-  return match ? match[1] : null;
-};
+  // Google Drive
+  if (url.includes('drive.google.com')) {
+    // Convert /view or /edit to /preview
+    return url.replace(/\/(view|edit)(\?.*)?$/, '/preview');
+  }
 
-const toYouTubeEmbedSrc = (input = '') => {
-  const id = getYouTubeVideoId(input);
-  if (!id) return '';
-  return `https://www.youtube-nocookie.com/embed/${id}?rel=0`;
+  // YouTube fallback (if some old links remain)
+  const youtubeMatch = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([A-Za-z0-9_-]{11})/i);
+  if (youtubeMatch) {
+    return `https://www.youtube-nocookie.com/embed/${youtubeMatch[1]}?rel=0`;
+  }
+
+  return url;
 };
 
 function PatientSessionDetail() {
@@ -90,11 +88,11 @@ function PatientSessionDetail() {
           <div key={ex._id} className="card session-exercise-card" style={{ display: 'flex', flexWrap: 'wrap', gap: '24px', padding: '24px', alignItems: 'flex-start' }}>
             {ex.videoPath && (
               <div className="session-video-wrap" style={{ flex: '1 1 250px', background: '#000', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}>
-                {(getYouTubeVideoId(ex.videoPath) || ex.videoPath.includes('vimeo')) ? (
+                {(ex.videoPath.includes('drive.google.com') || ex.videoPath.includes('youtube.com') || ex.videoPath.includes('youtu.be') || ex.videoPath.includes('vimeo')) ? (
                   <iframe
                     width="100%"
                     height="200"
-                    src={getYouTubeVideoId(ex.videoPath) ? toYouTubeEmbedSrc(ex.videoPath) : resolveVideoSrc(ex.videoPath)}
+                    src={toEmbedSrc(ex.videoPath)}
                     title={ex.title}
                     frameBorder="0"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"

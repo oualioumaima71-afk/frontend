@@ -33,19 +33,7 @@ function AudioPlayer({ variant = 'floating' }) {
           : { position: 'relative', display: 'flex', alignItems: 'center' }
       }
     >
-      {/* Hidden YouTube Embed */}
-      {isPlaying && (
-        <div style={{ position: 'absolute', width: 1, height: 1, opacity: 0, overflow: 'hidden', pointerEvents: 'none' }}>
-          <iframe
-            width="100"
-            height="100"
-            src={`https://www.youtube.com/embed/${videoId}?autoplay=1&loop=1&playlist=${videoId}&controls=0`}
-            title="Step By Step Zen Music"
-            allow="autoplay; encrypted-media"
-            frameBorder="0"
-          ></iframe>
-        </div>
-      )}
+      {/* Background music disabled (YouTube logic removed) */}
 
       {variant === 'floating' && (
         <div style={{ display: 'flex', flexDirection: 'column', minWidth: '80px' }}>

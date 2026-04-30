@@ -8,7 +8,7 @@ function TherapistSessionManage() {
 
   const [exTitle, setExTitle] = useState('');
   const [videoFile, setVideoFile] = useState(null);
-  const [videoUrl, setVideoUrl] = useState('');
+  const [videoFile, setVideoFile] = useState(null);
   const [description, setDescription] = useState('');
   const [duration, setDuration] = useState('');
   const [repetitions, setRepetitions] = useState('');
@@ -30,14 +30,14 @@ function TherapistSessionManage() {
   };
 
   const addExercise = () => {
-    if (!exTitle || !duration || (!videoFile && !videoUrl)) {
-      window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: "Titre, durée et vidéo (fichier ou lien YouTube) sont obligatoires !", type: 'error' } }));
+    if (!exTitle || !duration || !videoFile) {
+      window.dispatchEvent(new CustomEvent('show-toast', { detail: { message: "Titre, durée et vidéo sont obligatoires !", type: 'error' } }));
       return;
     }
     setExercises([...exercises, {
-      title: exTitle, videoFile, videoUrl, description, duration: Number(duration), repetitions: Number(repetitions) || 1
+      title: exTitle, videoFile, description, duration: Number(duration), repetitions: Number(repetitions) || 1
     }]);
-    setExTitle(''); setVideoFile(null); setVideoUrl(''); setDescription(''); setDuration(''); setRepetitions('');
+    setExTitle(''); setVideoFile(null); setDescription(''); setDuration(''); setRepetitions('');
     document.getElementById('fileUpload').value = ""; // reset file input visually
   };
 
@@ -58,7 +58,7 @@ function TherapistSessionManage() {
       description: ex.description,
       duration: ex.duration,
       repetitions: ex.repetitions,
-      videoPath: ex.videoPath || ex.videoUrl || ''
+      videoPath: ex.videoPath || ''
     }));
     formData.append('exercisesData', JSON.stringify(exercisesMeta));
 
@@ -88,7 +88,7 @@ function TherapistSessionManage() {
     setTitle('');
     setExercises([]);
     setEditingId(null);
-    setExTitle(''); setVideoFile(null); setVideoUrl(''); setDescription(''); setDuration(''); setRepetitions('');
+    setExTitle(''); setVideoFile(null); setDescription(''); setDuration(''); setRepetitions('');
     if (document.getElementById('fileUpload')) document.getElementById('fileUpload').value = "";
   };
 
@@ -108,8 +108,7 @@ function TherapistSessionManage() {
     setEditingId(s._id);
     setTitle(s.title);
     setExercises(s.exercises.map(ex => ({
-      ...ex,
-      videoUrl: ex.videoPath || ''
+      ...ex
     })));
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -140,19 +139,6 @@ function TherapistSessionManage() {
               <input id="fileUpload" type="file" accept="video/*" className="input" style={{ padding: '8px' }} onChange={e => setVideoFile(e.target.files[0])} />
             </div>
             <div className="form-group">
-              <label>Lien YouTube (optionnel si vous uploadez un fichier)</label>
-              <input
-                type="url"
-                className="input"
-                placeholder="Ex: https://www.youtube.com/watch?v=XXXXXXXXXXX"
-                value={videoUrl}
-                onChange={e => setVideoUrl(e.target.value)}
-              />
-              <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '6px' }}>
-                Astuce : vous pouvez coller un lien YouTube classique (watch), un short ou un lien youtu.be.
-              </div>
-            </div>
-            <div className="form-group">
               <label>Consignes d'exécution</label>
               <textarea className="input" style={{ height: '80px', resize: 'vertical' }} value={description} onChange={e => setDescription(e.target.value)}></textarea>
             </div>
@@ -181,7 +167,6 @@ function TherapistSessionManage() {
                       <strong style={{ fontSize: '14px', color: 'var(--primary)' }}>{i + 1}. {ex.title}</strong><br />
                       <span style={{ color: 'var(--text-muted)' }}>⏱ {ex.duration}s &nbsp;|&nbsp; 🔄 {ex.repetitions}</span>
                       {ex.videoFile && <div style={{ fontSize: '11px', color: '#17a2b8', marginTop: '4px' }}>📁 Fichier associé</div>}
-                      {!ex.videoFile && ex.videoUrl && <div style={{ fontSize: '11px', color: '#6c5ce7', marginTop: '4px' }}>▶ Lien YouTube associé</div>}
                     </div>
                     <button onClick={() => removeExercise(i)} style={{ color: '#e53935', background: '#ffebee', width: '28px', height: '28px', borderRadius: '14px', border: 'none', cursor: 'pointer', fontSize: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
                   </li>
