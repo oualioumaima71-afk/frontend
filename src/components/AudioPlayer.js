@@ -3,9 +3,6 @@ import React, { useState } from 'react';
 function AudioPlayer({ variant = 'floating' }) {
   const [isPlaying, setIsPlaying] = useState(false);
   
-  // YouTube Video ID for the requested "Musique Douce"
-  const videoId = '9TGlc0Fufgk';
-
   const toggleMusic = () => {
     setIsPlaying(!isPlaying);
   };
