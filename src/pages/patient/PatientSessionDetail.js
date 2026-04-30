@@ -13,22 +13,14 @@ const resolveVideoSrc = (videoPath) => {
   return `${BACKEND_ORIGIN}${normalizedPath}`;
 };
 
-const getDriveDirectLink = (url = '') => {
-  const match = url.match(/\/d\/(.+?)\/(view|edit)/);
-  if (match && match[1]) {
-    return `https://drive.google.com/uc?export=download&id=${match[1]}`;
-  }
-  return url;
-};
-
 const toEmbedSrc = (input = '') => {
   const url = String(input || '').trim();
   if (!url) return '';
 
   // Google Drive
   if (url.includes('drive.google.com')) {
-    // We prefer the direct link for the <video> tag if possible
-    return getDriveDirectLink(url);
+    // Convert /view or /edit to /preview for stable embedding
+    return url.replace(/\/(view|edit)(\?.*)?$/, '/preview');
   }
 
   // YouTube fallback
@@ -96,8 +88,7 @@ function PatientSessionDetail() {
           <div key={ex._id} className="card session-exercise-card" style={{ display: 'flex', flexWrap: 'wrap', gap: '24px', padding: '24px', alignItems: 'flex-start' }}>
             {ex.videoPath && (
               <div className="session-video-wrap" style={{ flex: '1 1 250px', background: '#000', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}>
-                {/* Check if it's a Drive link or YouTube/Vimeo to decide between iframe and <video> */}
-                {(ex.videoPath.includes('youtube.com') || ex.videoPath.includes('youtu.be') || ex.videoPath.includes('vimeo')) ? (
+                {(ex.videoPath.includes('drive.google.com') || ex.videoPath.includes('youtube.com') || ex.videoPath.includes('youtu.be') || ex.videoPath.includes('vimeo')) ? (
                   <iframe
                     width="100%"
                     height="200"
@@ -114,7 +105,7 @@ function PatientSessionDetail() {
                     height="200" 
                     controls 
                     style={{display:'block', objectFit: 'cover'}} 
-                    src={ex.videoPath.includes('drive.google.com') ? getDriveDirectLink(ex.videoPath) : resolveVideoSrc(ex.videoPath)} 
+                    src={resolveVideoSrc(ex.videoPath)} 
                   />
                 )}
               </div>
