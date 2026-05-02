@@ -121,6 +121,7 @@ const VideoPlayer = ({ videoPath, title }) => {
             url={resolveVideoSrc(videoPath)}
             playing={isPlaying}
             muted={isMuted}
+            controls={false}
             width="100%"
             height="100%"
             playsinline
@@ -144,27 +145,27 @@ const VideoPlayer = ({ videoPath, title }) => {
             </div>
 
             <div className="vpc-center">
-              <button className="vpc-big-btn" onClick={(e) => { e.stopPropagation(); togglePlay(); }}>
-                {isPlaying ? <Pause size={44} fill="white" color="white" /> : <Play size={44} fill="white" color="white" />}
+              <button type="button" className="vpc-big-btn" onClick={(e) => { e.stopPropagation(); togglePlay(); }} aria-label={isPlaying ? 'Pause' : 'Lecture'}>
+                {isPlaying ? <Pause className="vpc-big-btn-icon" fill="white" color="white" /> : <Play className="vpc-big-btn-icon" fill="white" color="white" />}
               </button>
             </div>
 
             <div className="vpc-bottom" onClick={(e) => e.stopPropagation()}>
               <div className="vpc-row">
                 <div className="vpc-left">
-                  <button onClick={togglePlay}>
-                    {isPlaying ? <Pause size={20} color="white" /> : <Play size={20} color="white" />}
+                  <button type="button" onClick={togglePlay} aria-label={isPlaying ? 'Pause' : 'Lecture'}>
+                    {isPlaying ? <Pause size={18} color="white" /> : <Play size={18} color="white" />}
                   </button>
-                  <button onClick={() => setIsMuted(m => !m)}>
-                    {isMuted ? <VolumeX size={20} color="white" /> : <Volume2 size={20} color="white" />}
+                  <button type="button" onClick={() => setIsMuted(m => !m)} aria-label={isMuted ? 'Activer le son' : 'Couper le son'}>
+                    {isMuted ? <VolumeX size={18} color="white" /> : <Volume2 size={18} color="white" />}
                   </button>
                 </div>
                 <div className="vpc-right">
-                  <button onClick={() => { playerRef.current?.seekTo(0); setIsPlaying(true); }}>
-                    <RotateCcw size={18} color="white" />
+                  <button type="button" onClick={() => { playerRef.current?.seekTo(0); setIsPlaying(true); }} aria-label="Recommencer depuis le début">
+                    <RotateCcw size={16} color="white" />
                   </button>
-                  <button onClick={requestFS}>
-                    <Maximize size={18} color="white" />
+                  <button type="button" onClick={requestFS} aria-label="Plein écran">
+                    <Maximize size={16} color="white" />
                   </button>
                 </div>
               </div>
@@ -260,7 +261,7 @@ const VideoPlayer = ({ videoPath, title }) => {
           display: flex;
           flex-direction: column;
           justify-content: space-between;
-          padding: 16px;
+          padding: 12px;
           background: linear-gradient(
             to top,
             rgba(0,0,0,0.65) 0%,
@@ -280,7 +281,7 @@ const VideoPlayer = ({ videoPath, title }) => {
         .vpc-top { display: flex; }
         .vpc-title {
           color: #fff;
-          font-size: 13px;
+          font-size: 12px;
           font-weight: 600;
           text-shadow: 0 1px 4px rgba(0,0,0,0.6);
         }
@@ -293,7 +294,8 @@ const VideoPlayer = ({ videoPath, title }) => {
         .vpc-big-btn {
           background: rgba(255,255,255,0.18);
           border: none;
-          width: 76px; height: 76px;
+          width: 52px;
+          height: 52px;
           border-radius: 50%;
           display: flex;
           align-items: center;
@@ -302,8 +304,12 @@ const VideoPlayer = ({ videoPath, title }) => {
           backdrop-filter: blur(10px);
           transition: transform 0.2s cubic-bezier(0.175,0.885,0.32,1.275), background 0.2s;
         }
+        .vpc-big-btn-icon {
+          width: 28px;
+          height: 28px;
+        }
         .vpc-big-btn:hover {
-          transform: scale(1.1);
+          transform: scale(1.06);
           background: rgba(255,255,255,0.28);
         }
 
@@ -315,7 +321,7 @@ const VideoPlayer = ({ videoPath, title }) => {
         }
         .vpc-left, .vpc-right {
           display: flex;
-          gap: 14px;
+          gap: 8px;
           align-items: center;
         }
         .vpc-left button,
@@ -323,10 +329,13 @@ const VideoPlayer = ({ videoPath, title }) => {
           background: none;
           border: none;
           cursor: pointer;
-          padding: 4px;
-          opacity: 0.85;
+          padding: 2px;
+          min-width: 28px;
+          min-height: 28px;
+          opacity: 0.9;
           display: flex;
           align-items: center;
+          justify-content: center;
           transition: opacity 0.2s;
         }
         .vpc-left button:hover,
@@ -338,8 +347,17 @@ const VideoPlayer = ({ videoPath, title }) => {
             border-radius: 10px; 
             aspect-ratio: 4 / 5; /* Taller format for mobile focus */
           }
-          .vpc-big-btn { width: 58px; height: 58px; }
-          .vpc-overlay { padding: 10px; }
+          .vpc-big-btn {
+            width: 44px;
+            height: 44px;
+          }
+          .vpc-big-btn-icon {
+            width: 22px;
+            height: 22px;
+          }
+          .vpc-overlay { padding: 8px; }
+          .vpc-title { font-size: 11px; }
+          .vpc-left, .vpc-right { gap: 6px; }
         }
       `}</style>
     </div>
