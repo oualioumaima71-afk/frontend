@@ -178,7 +178,7 @@ const VideoPlayer = ({ videoPath, title }) => {
           position: relative;
           width: 100%;
           aspect-ratio: 4 / 3;
-          background: #000d1a;
+          background: #000000;
           border-radius: 16px;
           overflow: hidden;
           box-shadow: 0 16px 48px rgba(0,0,0,0.35);
