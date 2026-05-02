@@ -237,12 +237,14 @@ const VideoPlayer = ({ videoPath, title }) => {
           overflow: hidden;
         }
 
-        /* Specific tweak for Drive to hide bars */
-        .embed-wrapper.is-drive .modern-iframe {
-          width: 100%;
-          height: 120%; /* Even taller to be sure */
-          margin-top: -10%; /* Crop both bars */
-          pointer-events: auto;
+        /* Specific tweak for Drive to hide bars — desktop only */
+        @media (min-width: 769px) {
+          .embed-wrapper.is-drive .modern-iframe {
+            width: 100%;
+            height: 120%;
+            margin-top: -10%;
+            pointer-events: auto;
+          }
         }
 
         .modern-iframe {
@@ -376,13 +378,27 @@ const VideoPlayer = ({ videoPath, title }) => {
           }
           
           .modern-video-container:has(.embed-wrapper) {
-            aspect-ratio: 4 / 3;
+            aspect-ratio: 16 / 9;
+            min-height: unset;
+          }
+
+          .embed-wrapper {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+          }
+
+          .embed-wrapper.is-drive {
+            overflow: visible;
           }
 
           /* On mobile, reset the crop — it can hide the video entirely */
           .embed-wrapper.is-drive .modern-iframe {
+            width: 100%;
             height: 100%;
             margin-top: 0;
+            pointer-events: auto;
           }
 
           .big-play-btn {

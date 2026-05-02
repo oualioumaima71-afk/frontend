@@ -72,7 +72,9 @@ function PatientSessionDetail() {
               <div className="exercise-layout">
                 {ex.videoPath && (
                   <div className="exercise-video-section">
-                    <VideoPlayer videoPath={ex.videoPath} title={ex.title} />
+                    <div style={{ width: '100%', aspectRatio: '16/9', position: 'relative' }}>
+                      <VideoPlayer videoPath={ex.videoPath} title={ex.title} />
+                    </div>
                   </div>
                 )}
                 
