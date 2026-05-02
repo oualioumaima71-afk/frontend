@@ -56,6 +56,12 @@ const VideoPlayer = ({ videoPath, title }) => {
   const isDrive = String(videoPath || '').includes('drive.google.com');
   const finalSrc = isDrive ? toEmbedSrc(videoPath) : resolveVideoSrc(videoPath);
 
+  // Auto-clear loader after 5 seconds to avoid being stuck
+  useEffect(() => {
+    const timer = setTimeout(() => setIsLoading(false), 5000);
+    return () => clearTimeout(timer);
+  }, []);
+
   const togglePlay = async () => {
     if (!isPlaying) {
       // Fullscreen before play for browser compatibility
@@ -87,11 +93,21 @@ const VideoPlayer = ({ videoPath, title }) => {
       ref={containerRef}
       onMouseMove={() => {
         setShowControls(true);
-        setTimeout(() => { if (isPlaying) setShowControls(false); }, 3000);
+        const timer = setTimeout(() => { if (isPlaying) setShowControls(false); }, 3000);
+        return () => clearTimeout(timer);
       }}
     >
       {isLoading && <div className="video-loader"><div className="spinner"></div></div>}
       
+      {!isPlaying && (
+        <div className="play-overlay" onClick={togglePlay}>
+          <div className="big-play-btn">
+            <Play size={40} fill="white" />
+          </div>
+          <span className="play-text">Lancer l'exercice</span>
+        </div>
+      )}
+
       <div className="player-wrapper" onClick={togglePlay}>
         <ReactPlayer
           ref={playerRef}
@@ -115,13 +131,13 @@ const VideoPlayer = ({ videoPath, title }) => {
                 playsInline: true,
                 controlsList: 'nodownload noplaybackrate'
               }
-            }
+            },
+            youtube: { playerVars: { showinfo: 0, rel: 0 } }
           }}
         />
         
-        {/* Custom Controls Layer (Only for non-Drive or if we want consistent UI) */}
-        {/* For Drive, ReactPlayer will render an iframe, so custom controls won't interact with it well */}
-        {!isDrive && (
+        {/* Custom Controls Layer for native videos */}
+        {!isDrive && isPlaying && (
           <div className={`video-overlay-controls ${showControls ? 'visible' : ''}`}>
             <div className="controls-top">
               <span className="video-title-hint">{title}</span>
@@ -129,14 +145,14 @@ const VideoPlayer = ({ videoPath, title }) => {
             
             <div className="controls-center">
               <button className="big-play-btn" onClick={(e) => { e.stopPropagation(); togglePlay(); }}>
-                {isPlaying ? <Pause size={48} fill="white" /> : <Play size={48} fill="white" />}
+                <Pause size={48} fill="white" />
               </button>
             </div>
             
             <div className="controls-bottom" onClick={(e) => e.stopPropagation()}>
               <div className="controls-row">
                 <div className="controls-left">
-                  <button onClick={togglePlay}>{isPlaying ? <Pause size={20} /> : <Play size={20} />}</button>
+                  <button onClick={togglePlay}><Pause size={20} /></button>
                   <button onClick={() => setIsMuted(!isMuted)}>{isMuted ? <VolumeX size={20} /> : <Volume2 size={20} />}</button>
                 </div>
                 <div className="controls-right">
@@ -170,6 +186,33 @@ const VideoPlayer = ({ videoPath, title }) => {
           display: flex;
           align-items: center;
           justify-content: center;
+        }
+
+        .play-overlay {
+          position: absolute;
+          inset: 0;
+          z-index: 15;
+          background: rgba(0,0,0,0.2);
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          transition: background 0.3s ease;
+        }
+
+        .play-overlay:hover {
+          background: rgba(0,0,0,0.4);
+        }
+
+        .play-text {
+          color: white;
+          margin-top: 15px;
+          font-weight: 700;
+          text-transform: uppercase;
+          letter-spacing: 1px;
+          font-size: 14px;
+          text-shadow: 0 2px 10px rgba(0,0,0,0.5);
         }
 
         /* Desktop Crop for Drive via ReactPlayer iframe */
