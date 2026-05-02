@@ -36,16 +36,34 @@ const toDriveEmbedSrc = (input = '') => {
 
 const isDriveUrl = (url = '') => String(url).toLowerCase().includes('drive.google.com');
 
+/** URL tentée pour lecture HTML5 ; si échec (fichier trop gros, privé, etc.), retombée sur iframe Drive. */
+const toDriveDirectPlayUrl = (fileId) =>
+  fileId ? `https://drive.google.com/uc?export=download&id=${encodeURIComponent(fileId)}` : '';
+
 const VideoPlayer = ({ videoPath, title }) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted]     = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [showControls, setShowControls] = useState(true);
+  /** Si la lecture directe Drive échoue, on réaffiche l’iframe (contrôles Google). */
+  const [driveStreamFailed, setDriveStreamFailed] = useState(false);
   const playerRef    = useRef(null);
   const containerRef = useRef(null);
   const hideTimeout  = useRef(null);
 
-  const isDrive = isDriveUrl(videoPath);
+  const driveFileId = getGoogleDriveFileId(videoPath);
+  const showDriveIframe =
+    isDriveUrl(videoPath) && (!driveFileId || driveStreamFailed);
+
+  useEffect(() => {
+    setDriveStreamFailed(false);
+    setIsLoading(true);
+  }, [videoPath]);
+
+  const reactPlayerUrl =
+    driveFileId && !driveStreamFailed
+      ? toDriveDirectPlayUrl(driveFileId)
+      : resolveVideoSrc(videoPath);
 
   useEffect(() => {
     const show = () => {
@@ -100,8 +118,8 @@ const VideoPlayer = ({ videoPath, title }) => {
         </div>
       )}
 
-      {/* ── GOOGLE DRIVE → iframe directe ── */}
-      {isDrive ? (
+      {/* ── Google Drive : iframe seulement si pas d’ID ou lecture directe impossible ── */}
+      {showDriveIframe ? (
         <div className="vpc-drive-wrapper">
           <iframe
             src={toDriveEmbedSrc(videoPath)}
@@ -114,11 +132,10 @@ const VideoPlayer = ({ videoPath, title }) => {
           />
         </div>
       ) : (
-        /* ── AUTRES SOURCES → ReactPlayer ── */
         <div className="vpc-player-wrapper" onClick={togglePlay}>
           <ReactPlayer
             ref={playerRef}
-            url={resolveVideoSrc(videoPath)}
+            url={reactPlayerUrl}
             playing={isPlaying}
             muted={isMuted}
             controls={false}
@@ -129,7 +146,15 @@ const VideoPlayer = ({ videoPath, title }) => {
             onBuffer={() => setIsLoading(true)}
             onBufferEnd={() => setIsLoading(false)}
             onEnded={() => setIsPlaying(false)}
-            onError={(e) => { console.error('Player error:', e); setIsLoading(false); }}
+            onError={(e) => {
+              console.error('Player error:', e);
+              if (driveFileId) {
+                setIsLoading(true);
+                setDriveStreamFailed(true);
+              } else {
+                setIsLoading(false);
+              }
+            }}
             config={{
               file: {
                 attributes: { playsInline: true, controlsList: 'nodownload' }
@@ -138,7 +163,6 @@ const VideoPlayer = ({ videoPath, title }) => {
             }}
           />
 
-          {/* Overlay controls */}
           <div className={`vpc-overlay ${showControls ? 'visible' : ''}`}>
             <div className="vpc-top">
               <span className="vpc-title">{title}</span>
