@@ -317,7 +317,10 @@ const VideoPlayer = ({ videoPath, title }) => {
 
         /* ── Mobile ── */
         @media (max-width: 768px) {
-          .vpc { border-radius: 10px; }
+          .vpc { 
+            border-radius: 10px; 
+            aspect-ratio: 4 / 5; /* Taller format for mobile focus */
+          }
           .vpc-big-btn { width: 58px; height: 58px; }
           .vpc-overlay { padding: 10px; }
         }
