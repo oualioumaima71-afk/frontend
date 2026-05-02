@@ -1,4 +1,5 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
+import ReactPlayer from 'react-player';
 import { Play, Pause, Maximize, Volume2, VolumeX, RotateCcw } from 'lucide-react';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://flowvia-backend.onrender.com/api';
@@ -41,80 +42,35 @@ const toEmbedSrc = (input = '') => {
     return url.replace(/\/(view|edit)(\?.*)?$/, '/preview');
   }
 
-  const youtubeMatch = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([A-Za-z0-9_-]{11})/i);
-  if (youtubeMatch) {
-    return `https://www.youtube-nocookie.com/embed/${youtubeMatch[1]}?rel=0`;
-  }
-
-  const vimeoMatch = url.match(/vimeo\.com\/(?:video\/)?(\d+)/i);
-  if (vimeoMatch) {
-    return `https://player.vimeo.com/video/${vimeoMatch[1]}`;
-  }
-
   return url;
-};
-
-const shouldUseEmbedPlayer = (videoPath = '') => {
-  const url = String(videoPath || '').toLowerCase();
-  return url.includes('drive.google.com') || url.includes('youtube.com') || url.includes('youtu.be') || url.includes('vimeo.com');
 };
 
 const VideoPlayer = ({ videoPath, title }) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
-  const [showControls, setShowControls] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
-  const videoRef = useRef(null);
+  const [showControls, setShowControls] = useState(true);
+  const playerRef = useRef(null);
   const containerRef = useRef(null);
 
-  const isEmbed = shouldUseEmbedPlayer(videoPath);
-
-  useEffect(() => {
-    let timeout;
-    const container = containerRef.current;
-    const handleMouseMove = () => {
-      setShowControls(true);
-      clearTimeout(timeout);
-      timeout = setTimeout(() => {
-        if (isPlaying) setShowControls(false);
-      }, 3000);
-    };
-
-    if (container) {
-      container.addEventListener('mousemove', handleMouseMove);
-    }
-    return () => {
-      if (container) container.removeEventListener('mousemove', handleMouseMove);
-    };
-  }, [isPlaying]);
+  const isDrive = String(videoPath || '').includes('drive.google.com');
+  const finalSrc = isDrive ? toEmbedSrc(videoPath) : resolveVideoSrc(videoPath);
 
   const togglePlay = async () => {
-    if (videoRef.current) {
-      if (isPlaying) {
-        videoRef.current.pause();
-        setIsPlaying(false);
-      } else {
-        // Automatically enter fullscreen when starting playback as requested
-        try {
-          if (containerRef.current?.requestFullscreen) {
-            await containerRef.current.requestFullscreen();
-          } else if (containerRef.current?.webkitRequestFullscreen) {
-            containerRef.current.webkitRequestFullscreen();
-          }
-        } catch (err) {
-          console.warn('Fullscreen blocked or failed:', err);
+    if (!isPlaying) {
+      // Fullscreen before play for browser compatibility
+      try {
+        if (containerRef.current?.requestFullscreen) {
+          await containerRef.current.requestFullscreen();
+        } else if (containerRef.current?.webkitRequestFullscreen) {
+          containerRef.current.webkitRequestFullscreen();
         }
-        
-        videoRef.current.play();
-        setIsPlaying(true);
+      } catch (err) {
+        console.warn('Fullscreen blocked:', err);
       }
-    }
-  };
-
-  const toggleMute = () => {
-    if (videoRef.current) {
-      videoRef.current.muted = !isMuted;
-      setIsMuted(!isMuted);
+      setIsPlaying(true);
+    } else {
+      setIsPlaying(false);
     }
   };
 
@@ -126,32 +82,42 @@ const VideoPlayer = ({ videoPath, title }) => {
   if (!videoPath) return null;
 
   return (
-    <div className="modern-video-container" ref={containerRef}>
+    <div 
+      className={`modern-video-container ${isDrive ? 'is-drive-container' : ''}`} 
+      ref={containerRef}
+      onMouseMove={() => {
+        setShowControls(true);
+        setTimeout(() => { if (isPlaying) setShowControls(false); }, 3000);
+      }}
+    >
       {isLoading && <div className="video-loader"><div className="spinner"></div></div>}
       
-      {isEmbed ? (
-        <div className={`embed-wrapper ${videoPath.includes('drive.google.com') ? 'is-drive' : ''}`}>
-          <iframe
-            className="modern-iframe"
-            src={toEmbedSrc(videoPath)}
-            title={title || 'Video Player'}
-            onLoad={() => setIsLoading(false)}
-            frameBorder="0"
-            allowFullScreen
-          />
-        </div>
-      ) : (
-        <div className="native-wrapper" onClick={togglePlay}>
-          <video
-            ref={videoRef}
-            className="modern-video-tag"
-            src={resolveVideoSrc(videoPath)}
-            onLoadStart={() => setIsLoading(true)}
-            onCanPlay={() => setIsLoading(false)}
-            onEnded={() => setIsPlaying(false)}
-            playsInline
-          />
-          
+      <div className="player-wrapper" onClick={togglePlay}>
+        <ReactPlayer
+          ref={playerRef}
+          url={finalSrc}
+          playing={isPlaying}
+          muted={isMuted}
+          width="100%"
+          height="100%"
+          onReady={() => setIsLoading(false)}
+          onStart={() => setIsLoading(false)}
+          onBuffer={() => setIsLoading(true)}
+          onBufferEnd={() => setIsLoading(false)}
+          onEnded={() => setIsPlaying(false)}
+          config={{
+            file: {
+              attributes: {
+                playsInline: true,
+                controlsList: 'nodownload noplaybackrate'
+              }
+            }
+          }}
+        />
+        
+        {/* Custom Controls Layer (Only for non-Drive or if we want consistent UI) */}
+        {/* For Drive, ReactPlayer will render an iframe, so custom controls won't interact with it well */}
+        {!isDrive && (
           <div className={`video-overlay-controls ${showControls ? 'visible' : ''}`}>
             <div className="controls-top">
               <span className="video-title-hint">{title}</span>
@@ -164,27 +130,26 @@ const VideoPlayer = ({ videoPath, title }) => {
             </div>
             
             <div className="controls-bottom" onClick={(e) => e.stopPropagation()}>
-              {/* Seek bar and timer removed as requested to prevent skipping */}
-              
               <div className="controls-row">
                 <div className="controls-left">
                   <button onClick={togglePlay}>{isPlaying ? <Pause size={20} /> : <Play size={20} />}</button>
-                  <button onClick={toggleMute}>{isMuted ? <VolumeX size={20} /> : <Volume2 size={20} />}</button>
+                  <button onClick={() => setIsMuted(!isMuted)}>{isMuted ? <VolumeX size={20} /> : <Volume2 size={20} />}</button>
                 </div>
                 <div className="controls-right">
-                  <button onClick={() => { videoRef.current.currentTime = 0; videoRef.current.play(); setIsPlaying(true); }}><RotateCcw size={18} title="Recommencer" /></button>
+                  <button onClick={() => { playerRef.current.seekTo(0); setIsPlaying(true); }}><RotateCcw size={18} title="Recommencer" /></button>
                   <button onClick={handleFullscreen}><Maximize size={18} /></button>
                 </div>
               </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
       <style>{`
         .modern-video-container {
           position: relative;
           width: 100%;
+          height: 100%;
           background: #000;
           border-radius: 20px;
           overflow: hidden;
@@ -192,14 +157,27 @@ const VideoPlayer = ({ videoPath, title }) => {
           display: flex;
           align-items: center;
           justify-content: center;
-          /* Flexible height based on content */
-          min-height: 200px;
-          max-height: 80vh;
         }
 
-        /* Default ratio for embeds when we don't know better */
-        .modern-video-container:has(.embed-wrapper) {
-          aspect-ratio: 16 / 9;
+        .player-wrapper {
+          width: 100%;
+          height: 100%;
+          position: relative;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        /* Desktop Crop for Drive via ReactPlayer iframe */
+        @media (min-width: 769px) {
+          .is-drive-container iframe {
+            width: 100% !important;
+            height: 120% !important;
+            margin-top: -10% !important;
+          }
+          .is-drive-container .player-wrapper {
+            overflow: hidden;
+          }
         }
 
         .video-loader {
@@ -224,42 +202,6 @@ const VideoPlayer = ({ videoPath, title }) => {
 
         @keyframes spin { to { transform: rotate(360deg); } }
 
-        .embed-wrapper, .native-wrapper {
-          width: 100%;
-          height: 100%;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          position: relative;
-        }
-
-        .embed-wrapper {
-          overflow: hidden;
-        }
-
-        /* Specific tweak for Drive to hide bars — desktop only */
-        @media (min-width: 769px) {
-          .embed-wrapper.is-drive .modern-iframe {
-            width: 100%;
-            height: 120%;
-            margin-top: -10%;
-            pointer-events: auto;
-          }
-        }
-
-        .modern-iframe {
-          width: 100%;
-          height: 100%;
-          border: none;
-        }
-
-        .modern-video-tag {
-          width: 100%;
-          height: auto;
-          max-height: 80vh;
-          object-fit: contain;
-        }
-
         .video-overlay-controls {
           position: absolute;
           inset: 0;
@@ -279,24 +221,6 @@ const VideoPlayer = ({ videoPath, title }) => {
           pointer-events: auto;
         }
 
-        .controls-top {
-          display: flex;
-          justify-content: space-between;
-        }
-
-        .video-title-hint {
-          color: white;
-          font-size: 14px;
-          font-weight: 600;
-          text-shadow: 0 2px 4px rgba(0,0,0,0.5);
-        }
-
-        .controls-center {
-          display: flex;
-          justify-content: center;
-          align-items: center;
-        }
-
         .big-play-btn {
           background: rgba(255,255,255,0.15);
           border: none;
@@ -310,38 +234,6 @@ const VideoPlayer = ({ videoPath, title }) => {
           backdrop-filter: blur(10px);
           color: white;
           transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
-
-        .big-play-btn:hover {
-          transform: scale(1.1);
-          background: rgba(255,255,255,0.25);
-        }
-
-        .controls-bottom {
-          display: flex;
-          flex-direction: column;
-          gap: 12px;
-        }
-
-        .progress-bar-container {
-          height: 4px;
-          width: 100%;
-          cursor: pointer;
-          padding: 10px 0;
-          margin: -10px 0;
-        }
-
-        .progress-bar-bg {
-          height: 4px;
-          background: rgba(255,255,255,0.2);
-          border-radius: 2px;
-          overflow: hidden;
-        }
-
-        .progress-bar-fill {
-          height: 100%;
-          background: var(--primary);
-          border-radius: 2px;
         }
 
         .controls-row {
@@ -368,46 +260,22 @@ const VideoPlayer = ({ videoPath, title }) => {
           transition: opacity 0.2s;
         }
 
-        .controls-row button:hover {
-          opacity: 1;
-        }
-
         @media (max-width: 768px) {
           .modern-video-container {
             border-radius: 12px;
           }
-          
-          .modern-video-container:has(.embed-wrapper) {
-            aspect-ratio: 16 / 9;
-            min-height: unset;
-          }
-
-          .embed-wrapper {
-            position: absolute;
-            inset: 0;
-            width: 100%;
-            height: 100%;
-          }
-
-          .embed-wrapper.is-drive {
-            overflow: visible;
-          }
-
-          /* On mobile, reset the crop — it can hide the video entirely */
-          .embed-wrapper.is-drive .modern-iframe {
-            width: 100%;
-            height: 100%;
-            margin-top: 0;
-            pointer-events: auto;
-          }
-
           .big-play-btn {
             width: 60px;
             height: 60px;
           }
-          
           .video-overlay-controls {
             padding: 12px;
+          }
+          /* Reset crop for mobile in ReactPlayer */
+          .is-drive-container iframe {
+            width: 100% !important;
+            height: 100% !important;
+            margin-top: 0 !important;
           }
         }
       `}</style>
