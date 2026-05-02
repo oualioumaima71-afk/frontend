@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import ReactPlayer from 'react-player';
 import { Play, Pause, Maximize, Volume2, VolumeX, RotateCcw } from 'lucide-react';
 
@@ -15,7 +15,6 @@ const resolveVideoSrc = (videoPath) => {
 const getGoogleDriveFileId = (input = '') => {
   const url = String(input || '').trim();
   if (!url.toLowerCase().includes('drive.google.com')) return '';
-
   try {
     const parsedUrl = new URL(url);
     const pathMatch = parsedUrl.pathname.match(/\/file\/d\/([^/]+)/i);
@@ -29,301 +28,298 @@ const getGoogleDriveFileId = (input = '') => {
   }
 };
 
-const toEmbedSrc = (input = '') => {
-  const url = String(input || '').trim();
-  if (!url) return '';
-
-  const driveFileId = getGoogleDriveFileId(url);
-  if (driveFileId) {
-    return `https://drive.google.com/file/d/${driveFileId}/preview`;
-  }
-
-  if (url.toLowerCase().includes('drive.google.com')) {
-    return url.replace(/\/(view|edit)(\?.*)?$/, '/preview');
-  }
-
-  return url;
+const toDriveEmbedSrc = (input = '') => {
+  const fileId = getGoogleDriveFileId(input);
+  if (fileId) return `https://drive.google.com/file/d/${fileId}/preview`;
+  return String(input).replace(/\/(view|edit)(\?.*)?$/, '/preview');
 };
+
+const isDriveUrl = (url = '') => String(url).toLowerCase().includes('drive.google.com');
 
 const VideoPlayer = ({ videoPath, title }) => {
   const [isPlaying, setIsPlaying] = useState(false);
-  const [isMuted, setIsMuted] = useState(false);
+  const [isMuted, setIsMuted]     = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [showControls, setShowControls] = useState(true);
-  const playerRef = useRef(null);
+  const playerRef    = useRef(null);
   const containerRef = useRef(null);
+  const hideTimeout  = useRef(null);
 
-  const isDrive = String(videoPath || '').includes('drive.google.com');
-  const finalSrc = isDrive ? toEmbedSrc(videoPath) : resolveVideoSrc(videoPath);
+  const isDrive = isDriveUrl(videoPath);
 
-  // Auto-clear loader after 5 seconds to avoid being stuck
   useEffect(() => {
-    const timer = setTimeout(() => setIsLoading(false), 5000);
-    return () => clearTimeout(timer);
-  }, []);
+    const show = () => {
+      setShowControls(true);
+      clearTimeout(hideTimeout.current);
+      hideTimeout.current = setTimeout(() => {
+        if (isPlaying) setShowControls(false);
+      }, 3000);
+    };
+    const el = containerRef.current;
+    if (el) {
+      el.addEventListener('mousemove', show);
+      el.addEventListener('touchstart', show);
+    }
+    return () => {
+      if (el) {
+        el.removeEventListener('mousemove', show);
+        el.removeEventListener('touchstart', show);
+      }
+      clearTimeout(hideTimeout.current);
+    };
+  }, [isPlaying]);
+
+  const requestFS = async () => {
+    const el = containerRef.current;
+    if (!el) return;
+    try {
+      if (el.requestFullscreen) await el.requestFullscreen();
+      else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+    } catch (e) {
+      console.warn('Fullscreen blocked:', e);
+    }
+  };
 
   const togglePlay = async () => {
     if (!isPlaying) {
-      // Fullscreen before play for browser compatibility
-      try {
-        if (containerRef.current?.requestFullscreen) {
-          await containerRef.current.requestFullscreen();
-        } else if (containerRef.current?.webkitRequestFullscreen) {
-          containerRef.current.webkitRequestFullscreen();
-        }
-      } catch (err) {
-        console.warn('Fullscreen blocked:', err);
-      }
+      await requestFS();
       setIsPlaying(true);
     } else {
       setIsPlaying(false);
     }
   };
 
-  const handleFullscreen = () => {
-    if (containerRef.current?.requestFullscreen) containerRef.current.requestFullscreen();
-    else if (containerRef.current?.webkitRequestFullscreen) containerRef.current.webkitRequestFullscreen();
-  };
-
   if (!videoPath) return null;
 
   return (
-    <div 
-      className={`modern-video-container ${isDrive ? 'is-drive-container' : ''}`} 
-      ref={containerRef}
-      onMouseMove={() => {
-        setShowControls(true);
-        const timer = setTimeout(() => { if (isPlaying) setShowControls(false); }, 3000);
-        return () => clearTimeout(timer);
-      }}
-    >
-      {isLoading && <div className="video-loader"><div className="spinner"></div></div>}
-      
-      {!isPlaying && (
-        <div className="play-overlay" onClick={togglePlay}>
-          <div className="big-play-btn">
-            <Play size={40} fill="white" />
-          </div>
-          <span className="play-text">Lancer l'exercice</span>
+    <div className="vpc" ref={containerRef}>
+      {/* ── LOADER ── */}
+      {isLoading && (
+        <div className="vpc-loader">
+          <div className="vpc-spinner" />
         </div>
       )}
 
-      <div className="player-wrapper" onClick={togglePlay}>
-        <ReactPlayer
-          ref={playerRef}
-          url={finalSrc}
-          playing={isPlaying}
-          muted={isMuted}
-          width="100%"
-          height="100%"
-          onReady={() => setIsLoading(false)}
-          onStart={() => setIsLoading(false)}
-          onBuffer={() => setIsLoading(true)}
-          onBufferEnd={() => setIsLoading(false)}
-          onEnded={() => setIsPlaying(false)}
-          onError={(e) => {
-            console.error('VideoPlayer Error:', e);
-            setIsLoading(false);
-          }}
-          config={{
-            file: {
-              attributes: {
-                playsInline: true,
-                controlsList: 'nodownload noplaybackrate'
-              }
-            },
-            youtube: { playerVars: { showinfo: 0, rel: 0 } }
-          }}
-        />
-        
-        {/* Custom Controls Layer for native videos */}
-        {!isDrive && isPlaying && (
-          <div className={`video-overlay-controls ${showControls ? 'visible' : ''}`}>
-            <div className="controls-top">
-              <span className="video-title-hint">{title}</span>
+      {/* ── GOOGLE DRIVE → iframe directe ── */}
+      {isDrive ? (
+        <div className="vpc-drive-wrapper">
+          <iframe
+            src={toDriveEmbedSrc(videoPath)}
+            title={title || 'Video'}
+            frameBorder="0"
+            allow="autoplay; fullscreen"
+            allowFullScreen
+            onLoad={() => setIsLoading(false)}
+            className="vpc-iframe"
+          />
+        </div>
+      ) : (
+        /* ── AUTRES SOURCES → ReactPlayer ── */
+        <div className="vpc-player-wrapper" onClick={togglePlay}>
+          <ReactPlayer
+            ref={playerRef}
+            url={resolveVideoSrc(videoPath)}
+            playing={isPlaying}
+            muted={isMuted}
+            width="100%"
+            height="100%"
+            playsinline
+            onReady={() => setIsLoading(false)}
+            onBuffer={() => setIsLoading(true)}
+            onBufferEnd={() => setIsLoading(false)}
+            onEnded={() => setIsPlaying(false)}
+            onError={(e) => { console.error('Player error:', e); setIsLoading(false); }}
+            config={{
+              file: {
+                attributes: { playsInline: true, controlsList: 'nodownload' }
+              },
+              youtube: { playerVars: { rel: 0, modestbranding: 1 } }
+            }}
+          />
+
+          {/* Overlay controls */}
+          <div className={`vpc-overlay ${showControls ? 'visible' : ''}`}>
+            <div className="vpc-top">
+              <span className="vpc-title">{title}</span>
             </div>
-            
-            <div className="controls-center">
-              <button className="big-play-btn" onClick={(e) => { e.stopPropagation(); togglePlay(); }}>
-                <Pause size={48} fill="white" />
+
+            <div className="vpc-center">
+              <button className="vpc-big-btn" onClick={(e) => { e.stopPropagation(); togglePlay(); }}>
+                {isPlaying ? <Pause size={44} fill="white" color="white" /> : <Play size={44} fill="white" color="white" />}
               </button>
             </div>
-            
-            <div className="controls-bottom" onClick={(e) => e.stopPropagation()}>
-              <div className="controls-row">
-                <div className="controls-left">
-                  <button onClick={togglePlay}><Pause size={20} /></button>
-                  <button onClick={() => setIsMuted(!isMuted)}>{isMuted ? <VolumeX size={20} /> : <Volume2 size={20} />}</button>
+
+            <div className="vpc-bottom" onClick={(e) => e.stopPropagation()}>
+              <div className="vpc-row">
+                <div className="vpc-left">
+                  <button onClick={togglePlay}>
+                    {isPlaying ? <Pause size={20} color="white" /> : <Play size={20} color="white" />}
+                  </button>
+                  <button onClick={() => setIsMuted(m => !m)}>
+                    {isMuted ? <VolumeX size={20} color="white" /> : <Volume2 size={20} color="white" />}
+                  </button>
                 </div>
-                <div className="controls-right">
-                  <button onClick={() => { playerRef.current.seekTo(0); setIsPlaying(true); }}><RotateCcw size={18} title="Recommencer" /></button>
-                  <button onClick={handleFullscreen}><Maximize size={18} /></button>
+                <div className="vpc-right">
+                  <button onClick={() => { playerRef.current?.seekTo(0); setIsPlaying(true); }}>
+                    <RotateCcw size={18} color="white" />
+                  </button>
+                  <button onClick={requestFS}>
+                    <Maximize size={18} color="white" />
+                  </button>
                 </div>
               </div>
             </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
       <style>{`
-        .modern-video-container {
+        .vpc {
           position: relative;
           width: 100%;
-          height: 100%;
-          background: #000;
-          border-radius: 20px;
+          aspect-ratio: 16 / 9;
+          background: #000d1a;
+          border-radius: 16px;
           overflow: hidden;
-          box-shadow: 0 20px 50px rgba(0,0,0,0.3);
-          display: flex;
-          align-items: center;
-          justify-content: center;
+          box-shadow: 0 16px 48px rgba(0,0,0,0.35);
         }
 
-        .player-wrapper {
-          width: 100%;
-          height: 100%;
-          position: relative;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-
-        .play-overlay {
+        /* ── Loader ── */
+        .vpc-loader {
           position: absolute;
           inset: 0;
-          z-index: 15;
-          background: rgba(0,0,0,0.2);
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          cursor: pointer;
-          transition: background 0.3s ease;
-        }
-
-        .play-overlay:hover {
-          background: rgba(0,0,0,0.4);
-        }
-
-        .play-text {
-          color: white;
-          margin-top: 15px;
-          font-weight: 700;
-          text-transform: uppercase;
-          letter-spacing: 1px;
-          font-size: 14px;
-          text-shadow: 0 2px 10px rgba(0,0,0,0.5);
-        }
-
-        /* Desktop Crop for Drive via ReactPlayer iframe */
-        @media (min-width: 769px) {
-          .is-drive-container iframe {
-            width: 100% !important;
-            height: 120% !important;
-            margin-top: -10% !important;
-          }
-          .is-drive-container .player-wrapper {
-            overflow: hidden;
-          }
-        }
-
-        .video-loader {
-          position: absolute;
-          inset: 0;
-          background: rgba(0,0,0,0.5);
+          z-index: 20;
           display: flex;
           align-items: center;
           justify-content: center;
-          z-index: 10;
+          background: rgba(0,0,0,0.55);
           backdrop-filter: blur(4px);
         }
-
-        .spinner {
-          width: 40px;
-          height: 40px;
-          border: 3px solid rgba(255,255,255,0.1);
-          border-top-color: var(--primary);
+        .vpc-spinner {
+          width: 42px; height: 42px;
+          border: 3px solid rgba(255,255,255,0.12);
+          border-top-color: #6c63ff;
           border-radius: 50%;
-          animation: spin 1s linear infinite;
+          animation: vpc-spin 0.9s linear infinite;
         }
+        @keyframes vpc-spin { to { transform: rotate(360deg); } }
 
-        @keyframes spin { to { transform: rotate(360deg); } }
-
-        .video-overlay-controls {
+        /* ── Drive iframe ── */
+        .vpc-drive-wrapper {
           position: absolute;
           inset: 0;
-          background: linear-gradient(0deg, rgba(0,0,0,0.6) 0%, transparent 50%, rgba(0,0,0,0.4) 100%);
+          width: 100%;
+          height: 100%;
+          overflow: hidden;
+        }
+        .vpc-iframe {
+          width: 100%;
+          height: 100%;
+          border: none;
+          display: block;
+        }
+
+        /* Desktop: crop les barres UI Drive */
+        @media (min-width: 769px) {
+          .vpc-iframe {
+            height: 122%;
+            margin-top: -11%;
+          }
+        }
+
+        /* ── ReactPlayer wrapper ── */
+        .vpc-player-wrapper {
+          position: absolute;
+          inset: 0;
+          width: 100%;
+          height: 100%;
+          cursor: pointer;
+        }
+
+        /* ── Overlay controls ── */
+        .vpc-overlay {
+          position: absolute;
+          inset: 0;
           display: flex;
           flex-direction: column;
           justify-content: space-between;
-          padding: 20px;
+          padding: 16px;
+          background: linear-gradient(
+            to top,
+            rgba(0,0,0,0.65) 0%,
+            transparent 45%,
+            rgba(0,0,0,0.3) 100%
+          );
           opacity: 0;
           transition: opacity 0.3s ease;
           pointer-events: none;
-          z-index: 5;
+          z-index: 10;
         }
-
-        .video-overlay-controls.visible {
+        .vpc-overlay.visible {
           opacity: 1;
           pointer-events: auto;
         }
 
-        .big-play-btn {
-          background: rgba(255,255,255,0.15);
+        .vpc-top { display: flex; }
+        .vpc-title {
+          color: #fff;
+          font-size: 13px;
+          font-weight: 600;
+          text-shadow: 0 1px 4px rgba(0,0,0,0.6);
+        }
+
+        .vpc-center {
+          display: flex;
+          justify-content: center;
+          align-items: center;
+        }
+        .vpc-big-btn {
+          background: rgba(255,255,255,0.18);
           border: none;
-          width: 80px;
-          height: 80px;
+          width: 76px; height: 76px;
           border-radius: 50%;
           display: flex;
           align-items: center;
           justify-content: center;
           cursor: pointer;
           backdrop-filter: blur(10px);
-          color: white;
-          transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+          transition: transform 0.2s cubic-bezier(0.175,0.885,0.32,1.275), background 0.2s;
+        }
+        .vpc-big-btn:hover {
+          transform: scale(1.1);
+          background: rgba(255,255,255,0.28);
         }
 
-        .controls-row {
+        .vpc-bottom { display: flex; flex-direction: column; }
+        .vpc-row {
           display: flex;
           justify-content: space-between;
           align-items: center;
         }
-
-        .controls-left, .controls-right {
+        .vpc-left, .vpc-right {
           display: flex;
-          gap: 16px;
+          gap: 14px;
           align-items: center;
         }
-
-        .controls-row button {
+        .vpc-left button,
+        .vpc-right button {
           background: none;
           border: none;
-          color: white;
           cursor: pointer;
-          padding: 5px;
+          padding: 4px;
+          opacity: 0.85;
           display: flex;
           align-items: center;
-          opacity: 0.8;
           transition: opacity 0.2s;
         }
+        .vpc-left button:hover,
+        .vpc-right button:hover { opacity: 1; }
 
+        /* ── Mobile ── */
         @media (max-width: 768px) {
-          .modern-video-container {
-            border-radius: 12px;
-          }
-          .big-play-btn {
-            width: 60px;
-            height: 60px;
-          }
-          .video-overlay-controls {
-            padding: 12px;
-          }
-          /* Reset crop for mobile in ReactPlayer */
-          .is-drive-container iframe {
-            width: 100% !important;
-            height: 100% !important;
-            margin-top: 0 !important;
-          }
+          .vpc { border-radius: 10px; }
+          .vpc-big-btn { width: 58px; height: 58px; }
+          .vpc-overlay { padding: 10px; }
         }
       `}</style>
     </div>
