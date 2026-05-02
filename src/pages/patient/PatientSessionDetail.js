@@ -64,58 +64,61 @@ function PatientSessionDetail() {
 
       <div className="exercises-timeline">
         {session.exercises.map((ex, index) => (
-          <div key={ex._id} className="exercise-card">
-            <div className="exercise-index">Exercice {index + 1}</div>
-            
-            <div className="exercise-layout">
-              {ex.videoPath && (
-                <div className="exercise-video-section">
-                  <VideoPlayer videoPath={ex.videoPath} title={ex.title} />
-                </div>
-              )}
+          <div key={ex._id} className="exercise-card-wrapper">
+            {index < session.exercises.length - 1 && <div className="timeline-connector"></div>}
+            <div className="exercise-card">
+              <div className="exercise-index">Exercice {index + 1}</div>
               
-              <div className="exercise-info-section">
-                <h2 className="exercise-title">{ex.title}</h2>
-                <p className="exercise-description">{ex.description}</p>
-                
-                <div className="exercise-stats">
-                  <div className="stat-pill">
-                    <span className="stat-icon">⏱</span>
-                    <span className="stat-value">{ex.duration}s</span>
+              <div className="exercise-layout">
+                {ex.videoPath && (
+                  <div className="exercise-video-section">
+                    <VideoPlayer videoPath={ex.videoPath} title={ex.title} />
                   </div>
-                  <div className="stat-pill">
-                    <span className="stat-icon">🔄</span>
-                    <span className="stat-value">{ex.repetitions} reps</span>
-                  </div>
-                </div>
+                )}
                 
-                <div className="exercise-actions">
-                  {session.status !== 'completed' ? (
-                    <div className="validation-buttons">
-                      <button 
-                        onClick={() => validateExercise(ex._id, 'fait')} 
-                        className={`action-btn success-btn ${ex.validationStatus === 'fait' ? 'active' : ''}`}
-                      >
-                        <span className="btn-icon">✓</span>
-                        J'ai réussi
-                      </button>
-                      <button 
-                        onClick={() => validateExercise(ex._id, 'non fait')} 
-                        className={`action-btn fail-btn ${ex.validationStatus === 'non fait' ? 'active' : ''}`}
-                      >
-                        <span className="btn-icon">✗</span>
-                        Trop difficile
-                      </button>
+                <div className="exercise-info-section">
+                  <h2 className="exercise-title">{ex.title}</h2>
+                  <p className="exercise-description">{ex.description}</p>
+                  
+                  <div className="exercise-stats">
+                    <div className="stat-pill">
+                      <span className="stat-icon">⏱</span>
+                      <span className="stat-value">{ex.duration}s</span>
                     </div>
-                  ) : (
-                    <div className={`completion-status ${ex.validationStatus}`}>
-                      {ex.validationStatus === 'fait' ? (
-                        <><span>✓</span> Exercice accompli !</>
-                      ) : (
-                        <><span>✗</span> Pas effectué</>
-                      )}
+                    <div className="stat-pill">
+                      <span className="stat-icon">🔄</span>
+                      <span className="stat-value">{ex.repetitions} reps</span>
                     </div>
-                  )}
+                  </div>
+                  
+                  <div className="exercise-actions">
+                    {session.status !== 'completed' ? (
+                      <div className="validation-buttons">
+                        <button 
+                          onClick={() => validateExercise(ex._id, 'fait')} 
+                          className={`action-btn success-btn ${ex.validationStatus === 'fait' ? 'active' : ''}`}
+                        >
+                          <span className="btn-icon">✓</span>
+                          J'ai réussi
+                        </button>
+                        <button 
+                          onClick={() => validateExercise(ex._id, 'non fait')} 
+                          className={`action-btn fail-btn ${ex.validationStatus === 'non fait' ? 'active' : ''}`}
+                        >
+                          <span className="btn-icon">✗</span>
+                          Trop difficile
+                        </button>
+                      </div>
+                    ) : (
+                      <div className={`completion-status ${ex.validationStatus}`}>
+                        {ex.validationStatus === 'fait' ? (
+                          <><span>✓</span> Exercice accompli !</>
+                        ) : (
+                          <><span>✗</span> Pas effectué</>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
@@ -126,13 +129,18 @@ function PatientSessionDetail() {
       {session.status !== 'completed' && (
         <div className="sticky-footer">
           <div className="footer-content">
-            <div className="completion-progress">
-              {session.exercises.filter(ex => ex.validationStatus !== 'pending').length} / {session.exercises.length} terminés
+            <div className="completion-stats-box">
+              <div className="stats-label">Progression</div>
+              <div className="stats-numbers">
+                <span className="count-done">{session.exercises.filter(ex => ex.validationStatus !== 'pending').length}</span>
+                <span className="count-total">/ {session.exercises.length}</span>
+                <span className="count-suffix">exercices</span>
+              </div>
             </div>
             <button 
               onClick={completeSession} 
               disabled={!allCompleted} 
-              className="btn btn-primary finish-btn"
+              className={`btn btn-primary finish-btn ${allCompleted ? 'pulse-ready' : ''}`}
             >
               Terminer la séance
             </button>
@@ -142,319 +150,227 @@ function PatientSessionDetail() {
 
       <style>{`
         .session-header-container {
-          margin-bottom: 32px;
+          margin-bottom: 40px;
+          animation: fadeInDown 0.6s ease;
+        }
+
+        @keyframes fadeInDown {
+          from { opacity: 0; transform: translateY(-20px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+
+        .exercise-card-wrapper {
+          position: relative;
+        }
+
+        .timeline-connector {
+          position: absolute;
+          left: 40px;
+          top: 100px;
+          bottom: -40px;
+          width: 3px;
+          background: linear-gradient(180deg, var(--primary) 0%, #e2e8f0 100%);
+          opacity: 0.3;
+          z-index: 0;
         }
 
         .session-header-top {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          margin-bottom: 12px;
+          margin-bottom: 16px;
         }
 
         .back-link {
           display: flex;
           align-items: center;
-          gap: 8px;
+          gap: 10px;
           color: var(--text-muted);
-          font-weight: 500;
-          font-size: 14px;
-          transition: color 0.2s;
+          font-weight: 600;
+          font-size: 15px;
+          padding: 8px 16px;
+          background: white;
+          border-radius: 12px;
+          box-shadow: 0 4px 10px rgba(0,0,0,0.03);
+          transition: all 0.2s;
         }
 
         .back-link:hover {
           color: var(--primary);
+          transform: translateX(-4px);
         }
 
         .session-status-badge {
-          padding: 6px 14px;
-          border-radius: 20px;
-          font-size: 12px;
-          font-weight: 700;
+          padding: 8px 16px;
+          border-radius: 30px;
+          font-size: 11px;
+          font-weight: 800;
           text-transform: uppercase;
-          letter-spacing: 0.5px;
+          letter-spacing: 1px;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.05);
         }
 
         .session-status-badge[data-status="completed"] {
-          background: #e1f7f1;
-          color: #0d9488;
+          background: #dcfce7;
+          color: #15803d;
         }
 
         .session-status-badge[data-status="in_progress"] {
-          background: #fff7ed;
-          color: #c2410c;
-        }
-
-        .session-status-badge:not([data-status="completed"]):not([data-status="in_progress"]) {
-          background: #f1f5f9;
-          color: #475569;
+          background: #ffedd5;
+          color: #9a3412;
         }
 
         .session-main-title {
-          font-size: 2rem;
-          font-weight: 800;
+          font-size: 2.5rem;
+          font-weight: 900;
           color: var(--text);
           margin: 0;
-          line-height: 1.2;
-          letter-spacing: -0.5px;
+          line-height: 1.1;
+          letter-spacing: -1px;
         }
 
         .exercises-timeline {
           display: flex;
           flex-direction: column;
-          gap: 40px;
-          padding-bottom: 140px;
+          gap: 60px;
+          padding-bottom: 160px;
         }
 
         .exercise-card {
           background: white;
-          border-radius: 24px;
-          padding: 32px;
-          box-shadow: 0 10px 25px rgba(0,0,0,0.03);
-          border: 1px solid rgba(0,0,0,0.02);
+          border-radius: 28px;
+          padding: 40px;
+          box-shadow: 0 20px 40px rgba(0,0,0,0.04);
+          border: 1px solid rgba(0,0,0,0.01);
           position: relative;
-          transition: transform 0.3s ease, box-shadow 0.3s ease;
-          margin-top: 12px;
+          z-index: 1;
+          transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
 
         .exercise-card:hover {
-          transform: translateY(-4px);
-          box-shadow: 0 15px 35px rgba(0,0,0,0.06);
+          transform: translateY(-8px) scale(1.01);
+          box-shadow: 0 30px 60px rgba(0,0,0,0.08);
         }
 
         .exercise-index {
           position: absolute;
-          top: -14px;
-          left: 24px;
-          background: var(--primary);
+          top: -18px;
+          left: 40px;
+          background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
           color: white;
-          padding: 4px 16px;
-          border-radius: 20px;
+          padding: 6px 20px;
+          border-radius: 30px;
           font-size: 12px;
-          font-weight: 700;
-          box-shadow: 0 4px 12px rgba(88, 201, 207, 0.3);
+          font-weight: 800;
+          box-shadow: 0 8px 20px rgba(88, 201, 207, 0.4);
           z-index: 10;
         }
 
         .exercise-layout {
           display: grid;
-          grid-template-columns: 1fr 1fr;
+          grid-template-columns: 1.2fr 1fr;
           gap: 40px;
           align-items: start;
         }
 
-        .exercise-video-section {
-          width: 100%;
-        }
-
-        .exercise-info-section {
-          display: flex;
-          flex-direction: column;
-        }
-
         .exercise-title {
-          font-size: 1.5rem;
-          font-weight: 700;
-          margin: 0 0 12px 0;
+          font-size: 1.8rem;
+          font-weight: 800;
+          margin: 0 0 16px 0;
           color: var(--text);
-          line-height: 1.3;
+          letter-spacing: -0.5px;
         }
 
         .exercise-description {
           color: #475569;
-          font-size: 15px;
-          line-height: 1.6;
+          font-size: 16px;
+          line-height: 1.7;
           margin-bottom: 24px;
         }
 
         .exercise-stats {
           display: flex;
-          gap: 12px;
+          gap: 16px;
           margin-bottom: 32px;
         }
 
         .stat-pill {
-          background: #f8fafc;
-          padding: 8px 16px;
-          border-radius: 12px;
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          font-weight: 600;
-          color: #475569;
-          font-size: 14px;
-          border: 1px solid #f1f5f9;
-        }
-
-        .stat-icon {
-          font-size: 16px;
-        }
-
-        .validation-buttons {
-          display: flex;
-          gap: 12px;
-        }
-
-        .action-btn {
-          flex: 1;
-          padding: 14px;
-          border-radius: 14px;
-          border: 2px solid transparent;
-          font-weight: 600;
-          font-size: 15px;
-          cursor: pointer;
-          transition: all 0.2s;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 8px;
-        }
-
-        .success-btn {
-          background: #f0fdf4;
-          color: #166534;
-        }
-
-        .success-btn:hover {
-          background: #dcfce7;
-        }
-
-        .success-btn.active {
-          background: #16a34a;
-          color: white;
-          box-shadow: 0 8px 20px rgba(22, 163, 74, 0.25);
-        }
-
-        .fail-btn {
-          background: #fef2f2;
-          color: #991b1b;
-        }
-
-        .fail-btn:hover {
-          background: #fee2e2;
-        }
-
-        .fail-btn.active {
-          background: #dc2626;
-          color: white;
-          box-shadow: 0 8px 20px rgba(220, 38, 38, 0.25);
-        }
-
-        .completion-status {
-          padding: 16px;
-          border-radius: 14px;
-          text-align: center;
-          font-weight: 600;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 10px;
-        }
-
-        .completion-status.fait {
-          background: #f0fdf4;
-          color: #166534;
-        }
-
-        .completion-status.non.fait {
-          background: #fef2f2;
-          color: #991b1b;
-        }
-
-        .sticky-footer {
-          position: fixed;
-          bottom: 0;
-          left: 0;
-          right: 0;
-          background: rgba(255, 255, 255, 0.8);
-          backdrop-filter: blur(20px);
-          padding: 20px 32px;
-          border-top: 1px solid rgba(0,0,0,0.05);
-          box-shadow: 0 -10px 40px rgba(0,0,0,0.05);
-          z-index: 1000;
-        }
-
-        .footer-content {
-          max-width: 1200px;
-          margin: 0 auto;
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-        }
-
-        .completion-progress {
-          font-weight: 600;
-          color: var(--text-muted);
-        }
-
-        .finish-btn {
-          padding: 16px 40px;
+          background: #f1f5f9;
+          padding: 10px 20px;
           border-radius: 16px;
-          font-size: 16px;
+          display: flex;
+          align-items: center;
+          gap: 10px;
           font-weight: 700;
+          color: #1e293b;
+          font-size: 15px;
         }
 
-        @media (max-width: 1024px) {
+        .completion-stats-box {
+          display: flex;
+          flex-direction: column;
+        }
+
+        .stats-label {
+          font-size: 11px;
+          font-weight: 800;
+          color: var(--text-muted);
+          text-transform: uppercase;
+          letter-spacing: 1px;
+          margin-bottom: 2px;
+        }
+
+        .stats-numbers {
+          display: flex;
+          align-items: baseline;
+          gap: 4px;
+        }
+
+        .count-done {
+          font-size: 28px;
+          font-weight: 900;
+          color: var(--primary);
+          line-height: 1;
+        }
+
+        .count-total {
+          font-size: 18px;
+          font-weight: 700;
+          color: #94a3b8;
+        }
+
+        .count-suffix {
+          font-size: 14px;
+          font-weight: 600;
+          color: #64748b;
+          margin-left: 4px;
+        }
+
+        .pulse-ready {
+          animation: pulse-primary 2s infinite;
+        }
+
+        @keyframes pulse-primary {
+          0% { box-shadow: 0 0 0 0 rgba(88, 201, 207, 0.4); }
+          70% { box-shadow: 0 0 0 15px rgba(88, 201, 207, 0); }
+          100% { box-shadow: 0 0 0 0 rgba(88, 201, 207, 0); }
+        }
+
+        @media (max-width: 1100px) {
           .exercise-layout {
             grid-template-columns: 1fr;
-            gap: 20px;
           }
-          
-          .exercise-card {
-            padding: 24px;
-          }
-          
-          .exercise-title {
-            font-size: 1.5rem;
+          .timeline-connector {
+            display: none;
           }
         }
 
         @media (max-width: 768px) {
-          .session-main-title {
-            font-size: 1.75rem;
-          }
-          
-          .exercise-title {
-            font-size: 1.3rem;
-          }
-
-          .exercise-card {
-            border-radius: 20px;
-            padding: 20px;
-          }
-
-          .exercise-index {
-            left: 16px;
-          }
-
-          .sticky-footer {
-            padding: 12px 16px 24px;
-          }
-
-          .footer-content {
-            flex-direction: column;
-            gap: 10px;
-          }
-
-          .finish-btn {
-            width: 100%;
-            padding: 12px;
-          }
-        }
-
-        @media (max-width: 480px) {
-          .exercise-stats {
-            flex-direction: column;
-            gap: 8px;
-          }
-          
-          .stat-pill {
-            width: 100%;
-          }
-
-          .validation-buttons {
-            flex-direction: column;
-          }
+          .session-main-title { font-size: 1.8rem; }
+          .exercise-card { padding: 24px; border-radius: 24px; }
+          .exercise-title { font-size: 1.4rem; }
+          .exercise-index { left: 24px; }
+          .back-link { padding: 6px 12px; font-size: 13px; }
         }
       `}</style>
     </Layout>
