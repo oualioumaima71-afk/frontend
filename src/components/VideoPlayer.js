@@ -105,22 +105,15 @@ const VideoPlayer = ({ videoPath, title }) => {
           background: #000;
           box-shadow: 0 10px 30px rgba(0,0,0,0.2);
           position: relative;
-          display: flex;
-          justify-content: center;
-          align-items: center;
         }
 
         .video-embed-wrapper {
           position: relative;
           width: 100%;
           aspect-ratio: 16 / 9;
+          display: block;
         }
         
-        /* Some Drive videos might benefit from a slightly taller default or flexibility */
-        .video-embed-wrapper.is-drive {
-          /* No change needed for now, but placeholder for drive-specific tweaks */
-        }
-
         .video-iframe {
           position: absolute;
           top: 0;
@@ -128,6 +121,7 @@ const VideoPlayer = ({ videoPath, title }) => {
           width: 100%;
           height: 100%;
           border: none;
+          background: #000;
         }
 
         .video-native {
@@ -151,18 +145,16 @@ const VideoPlayer = ({ videoPath, title }) => {
           }
           
           .video-native {
-            max-height: 70vh;
+            max-height: 65vh;
           }
           
           .video-native.is-vertical {
-            max-height: 65vh;
+            max-height: 60vh;
             width: 100%;
-            object-fit: contain;
           }
           
           .video-embed-wrapper {
-            /* On very small screens, maybe 4/3 or keeping 16/9 is safer */
-            min-height: 200px;
+            min-height: 180px;
           }
         }
       `}</style>

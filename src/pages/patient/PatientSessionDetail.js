@@ -191,17 +191,19 @@ function PatientSessionDetail() {
         }
 
         .session-main-title {
-          font-size: 2.2rem;
+          font-size: 2rem;
+          font-weight: 800;
           color: var(--text);
           margin: 0;
           line-height: 1.2;
+          letter-spacing: -0.5px;
         }
 
         .exercises-timeline {
           display: flex;
           flex-direction: column;
-          gap: 32px;
-          padding-bottom: 100px;
+          gap: 40px;
+          padding-bottom: 140px;
         }
 
         .exercise-card {
@@ -212,6 +214,7 @@ function PatientSessionDetail() {
           border: 1px solid rgba(0,0,0,0.02);
           position: relative;
           transition: transform 0.3s ease, box-shadow 0.3s ease;
+          margin-top: 12px;
         }
 
         .exercise-card:hover {
@@ -221,8 +224,8 @@ function PatientSessionDetail() {
 
         .exercise-index {
           position: absolute;
-          top: -12px;
-          left: 32px;
+          top: -14px;
+          left: 24px;
           background: var(--primary);
           color: white;
           padding: 4px 16px;
@@ -230,6 +233,7 @@ function PatientSessionDetail() {
           font-size: 12px;
           font-weight: 700;
           box-shadow: 0 4px 12px rgba(88, 201, 207, 0.3);
+          z-index: 10;
         }
 
         .exercise-layout {
@@ -249,14 +253,16 @@ function PatientSessionDetail() {
         }
 
         .exercise-title {
-          font-size: 1.75rem;
-          margin: 0 0 16px 0;
+          font-size: 1.5rem;
+          font-weight: 700;
+          margin: 0 0 12px 0;
           color: var(--text);
+          line-height: 1.3;
         }
 
         .exercise-description {
-          color: #64748b;
-          font-size: 16px;
+          color: #475569;
+          font-size: 15px;
           line-height: 1.6;
           margin-bottom: 24px;
         }
@@ -391,11 +397,15 @@ function PatientSessionDetail() {
         @media (max-width: 1024px) {
           .exercise-layout {
             grid-template-columns: 1fr;
-            gap: 24px;
+            gap: 20px;
           }
           
           .exercise-card {
             padding: 24px;
+          }
+          
+          .exercise-title {
+            font-size: 1.5rem;
           }
         }
 
@@ -405,24 +415,30 @@ function PatientSessionDetail() {
           }
           
           .exercise-title {
-            font-size: 1.4rem;
+            font-size: 1.3rem;
           }
 
           .exercise-card {
             border-radius: 20px;
+            padding: 20px;
+          }
+
+          .exercise-index {
+            left: 16px;
           }
 
           .sticky-footer {
-            padding: 16px;
+            padding: 12px 16px 24px;
           }
 
           .footer-content {
             flex-direction: column;
-            gap: 12px;
+            gap: 10px;
           }
 
           .finish-btn {
             width: 100%;
+            padding: 12px;
           }
         }
 
