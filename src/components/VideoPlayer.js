@@ -62,7 +62,6 @@ const shouldUseEmbedPlayer = (videoPath = '') => {
 const VideoPlayer = ({ videoPath, title }) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
-  const [progress, setProgress] = useState(0);
   const [showControls, setShowControls] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
   const videoRef = useRef(null);
@@ -103,13 +102,6 @@ const VideoPlayer = ({ videoPath, title }) => {
     }
   };
 
-  const handleTimeUpdate = () => {
-    if (videoRef.current) {
-      const p = (videoRef.current.currentTime / videoRef.current.duration) * 100;
-      setProgress(p);
-    }
-  };
-
   const toggleMute = () => {
     if (videoRef.current) {
       videoRef.current.muted = !isMuted;
@@ -145,7 +137,6 @@ const VideoPlayer = ({ videoPath, title }) => {
             ref={videoRef}
             className="modern-video-tag"
             src={resolveVideoSrc(videoPath)}
-            onTimeUpdate={handleTimeUpdate}
             onLoadStart={() => setIsLoading(true)}
             onCanPlay={() => setIsLoading(false)}
             onEnded={() => setIsPlaying(false)}
@@ -164,11 +155,7 @@ const VideoPlayer = ({ videoPath, title }) => {
             </div>
             
             <div className="controls-bottom" onClick={(e) => e.stopPropagation()}>
-              <div className="progress-bar-container">
-                <div className="progress-bar-bg">
-                  <div className="progress-bar-fill" style={{ width: `${progress}%` }}></div>
-                </div>
-              </div>
+              {/* Seek bar and timer removed as requested to prevent skipping */}
               
               <div className="controls-row">
                 <div className="controls-left">
@@ -176,7 +163,7 @@ const VideoPlayer = ({ videoPath, title }) => {
                   <button onClick={toggleMute}>{isMuted ? <VolumeX size={20} /> : <Volume2 size={20} />}</button>
                 </div>
                 <div className="controls-right">
-                  <button onClick={() => { videoRef.current.currentTime = 0; videoRef.current.play(); setIsPlaying(true); }}><RotateCcw size={18} /></button>
+                  <button onClick={() => { videoRef.current.currentTime = 0; videoRef.current.play(); setIsPlaying(true); }}><RotateCcw size={18} title="Recommencer" /></button>
                   <button onClick={handleFullscreen}><Maximize size={18} /></button>
                 </div>
               </div>
