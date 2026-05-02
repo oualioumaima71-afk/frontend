@@ -36,34 +36,26 @@ const toDriveEmbedSrc = (input = '') => {
 
 const isDriveUrl = (url = '') => String(url).toLowerCase().includes('drive.google.com');
 
-/** URL tentée pour lecture HTML5 ; si échec (fichier trop gros, privé, etc.), retombée sur iframe Drive. */
-const toDriveDirectPlayUrl = (fileId) =>
-  fileId ? `https://drive.google.com/uc?export=download&id=${encodeURIComponent(fileId)}` : '';
-
 const VideoPlayer = ({ videoPath, title }) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted]     = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [showControls, setShowControls] = useState(true);
-  /** Si la lecture directe Drive échoue, on réaffiche l’iframe (contrôles Google). */
-  const [driveStreamFailed, setDriveStreamFailed] = useState(false);
   const playerRef    = useRef(null);
   const containerRef = useRef(null);
   const hideTimeout  = useRef(null);
 
-  const driveFileId = getGoogleDriveFileId(videoPath);
-  const showDriveIframe =
-    isDriveUrl(videoPath) && (!driveFileId || driveStreamFailed);
+  /** Drive : iframe uniquement (la lecture directe reste souvent bloquée sans erreur → spinner infini). */
+  const embedDrive = isDriveUrl(videoPath);
 
   useEffect(() => {
-    setDriveStreamFailed(false);
     setIsLoading(true);
-  }, [videoPath]);
+    if (!embedDrive) return undefined;
+    const maxWait = window.setTimeout(() => setIsLoading(false), 12000);
+    return () => clearTimeout(maxWait);
+  }, [videoPath, embedDrive]);
 
-  const reactPlayerUrl =
-    driveFileId && !driveStreamFailed
-      ? toDriveDirectPlayUrl(driveFileId)
-      : resolveVideoSrc(videoPath);
+  const reactPlayerUrl = resolveVideoSrc(videoPath);
 
   useEffect(() => {
     const show = () => {
@@ -110,16 +102,14 @@ const VideoPlayer = ({ videoPath, title }) => {
   if (!videoPath) return null;
 
   return (
-    <div className="vpc" ref={containerRef}>
-      {/* ── LOADER ── */}
+    <div className={`vpc ${embedDrive ? 'vpc--drive' : ''}`} ref={containerRef}>
       {isLoading && (
         <div className="vpc-loader">
           <div className="vpc-spinner" />
         </div>
       )}
 
-      {/* ── Google Drive : iframe seulement si pas d’ID ou lecture directe impossible ── */}
-      {showDriveIframe ? (
+      {embedDrive ? (
         <div className="vpc-drive-wrapper">
           <iframe
             src={toDriveEmbedSrc(videoPath)}
@@ -148,12 +138,7 @@ const VideoPlayer = ({ videoPath, title }) => {
             onEnded={() => setIsPlaying(false)}
             onError={(e) => {
               console.error('Player error:', e);
-              if (driveFileId) {
-                setIsLoading(true);
-                setDriveStreamFailed(true);
-              } else {
-                setIsLoading(false);
-              }
+              setIsLoading(false);
             }}
             config={{
               file: {
@@ -211,6 +196,11 @@ const VideoPlayer = ({ videoPath, title }) => {
           box-shadow: 0 16px 48px rgba(0,0,0,0.35);
         }
 
+        /* Drive embed : ratio vidéo standard, pleine largeur du parent */
+        .vpc--drive {
+          aspect-ratio: 16 / 9;
+        }
+
         /* ── Loader ── */
         .vpc-loader {
           position: absolute;
@@ -238,6 +228,7 @@ const VideoPlayer = ({ videoPath, title }) => {
           width: 100%;
           height: 100%;
           overflow: hidden;
+          -webkit-overflow-scrolling: touch;
         }
         .vpc-iframe {
           width: 100%;
@@ -246,11 +237,21 @@ const VideoPlayer = ({ videoPath, title }) => {
           display: block;
         }
 
-        /* Desktop: crop les barres UI Drive */
+        /* Desktop : léger crop des bordures Drive */
         @media (min-width: 769px) {
-          .vpc-iframe {
-            height: 122%;
-            margin-top: -11%;
+          .vpc--drive .vpc-iframe {
+            height: 118%;
+            margin-top: -9%;
+          }
+        }
+
+        /* Mobile : agrandir l’iframe pour réduire les marges internes Drive (contenu centré, overflow caché) */
+        @media (max-width: 768px) {
+          .vpc--drive .vpc-iframe {
+            width: 108%;
+            height: 112%;
+            margin-left: -4%;
+            margin-top: -5%;
           }
         }
 
@@ -369,7 +370,10 @@ const VideoPlayer = ({ videoPath, title }) => {
         @media (max-width: 768px) {
           .vpc { 
             border-radius: 10px; 
-            aspect-ratio: 4 / 5; /* Taller format for mobile focus */
+            aspect-ratio: 4 / 5;
+          }
+          .vpc--drive {
+            aspect-ratio: 16 / 9;
           }
           .vpc-big-btn {
             width: 44px;
