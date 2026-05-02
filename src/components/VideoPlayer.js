@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react';
 import ReactPlayer from 'react-player';
 import { Play, Pause, Maximize, Volume2, VolumeX, RotateCcw } from 'lucide-react';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://flowvia-backend.onrender.com/api';
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://backend-jpbe.onrender.com/api';
 const BACKEND_ORIGIN = API_BASE_URL.replace(/\/api\/?$/, '');
 
 const resolveVideoSrc = (videoPath) => {
@@ -105,6 +105,10 @@ const VideoPlayer = ({ videoPath, title }) => {
           onBuffer={() => setIsLoading(true)}
           onBufferEnd={() => setIsLoading(false)}
           onEnded={() => setIsPlaying(false)}
+          onError={(e) => {
+            console.error('VideoPlayer Error:', e);
+            setIsLoading(false);
+          }}
           config={{
             file: {
               attributes: {
