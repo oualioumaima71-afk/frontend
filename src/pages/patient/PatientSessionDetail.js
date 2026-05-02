@@ -2,65 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import api from '../../api';
 import Layout from '../../components/Layout';
-
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://flowvia-backend.onrender.com/api';
-const BACKEND_ORIGIN = API_BASE_URL.replace(/\/api\/?$/, '');
-
-const resolveVideoSrc = (videoPath) => {
-  if (!videoPath) return '';
-  if (/^https?:\/\//i.test(videoPath)) return videoPath;
-  const normalizedPath = videoPath.startsWith('/') ? videoPath : `/${videoPath}`;
-  return `${BACKEND_ORIGIN}${normalizedPath}`;
-};
-
-const getGoogleDriveFileId = (input = '') => {
-  const url = String(input || '').trim();
-  if (!url.toLowerCase().includes('drive.google.com')) return '';
-
-  try {
-    const parsedUrl = new URL(url);
-    const pathMatch = parsedUrl.pathname.match(/\/file\/d\/([^/]+)/i);
-    if (pathMatch) return decodeURIComponent(pathMatch[1]);
-    return parsedUrl.searchParams.get('id') || '';
-  } catch (e) {
-    const pathMatch = url.match(/\/file\/d\/([^/?#]+)/i);
-    if (pathMatch) return pathMatch[1];
-    const idMatch = url.match(/[?&]id=([^&#]+)/i);
-    return idMatch ? idMatch[1] : '';
-  }
-};
-
-const toEmbedSrc = (input = '') => {
-  const url = String(input || '').trim();
-  if (!url) return '';
-
-  const driveFileId = getGoogleDriveFileId(url);
-  if (driveFileId) {
-    return `https://drive.google.com/file/d/${driveFileId}/preview`;
-  }
-
-  if (url.toLowerCase().includes('drive.google.com')) {
-    return url.replace(/\/(view|edit)(\?.*)?$/, '/preview');
-  }
-
-  // YouTube fallback
-  const youtubeMatch = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([A-Za-z0-9_-]{11})/i);
-  if (youtubeMatch) {
-    return `https://www.youtube-nocookie.com/embed/${youtubeMatch[1]}?rel=0`;
-  }
-
-  const vimeoMatch = url.match(/vimeo\.com\/(?:video\/)?(\d+)/i);
-  if (vimeoMatch) {
-    return `https://player.vimeo.com/video/${vimeoMatch[1]}`;
-  }
-
-  return url;
-};
-
-const shouldUseEmbedPlayer = (videoPath = '') => {
-  const url = String(videoPath || '').toLowerCase();
-  return url.includes('drive.google.com') || url.includes('youtube.com') || url.includes('youtu.be') || url.includes('vimeo.com');
-};
+import VideoPlayer from '../../components/VideoPlayer';
 
 function PatientSessionDetail() {
   const { id } = useParams();
@@ -107,160 +49,400 @@ function PatientSessionDetail() {
 
   return (
     <Layout role="patient">
-      <div className="session-header" style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
-        <Link to="/patient/sessions" className="btn btn-secondary" style={{ padding: '6px 12px', borderRadius: '8px' }}>← Retour</Link>
-        <h1 style={{ margin: 0 }}>{session.title}</h1>
-        <span style={{ fontSize: '12px', padding: '4px 10px', background: session.status === 'completed' ? '#e8f5e9' : '#fff3e0', color: session.status === 'completed' ? 'var(--primary)' : '#e65100', borderRadius: '12px', fontWeight: '600' }}>{sessionStatusLabel}</span>
+      <div className="session-header-container">
+        <div className="session-header-top">
+          <Link to="/patient/sessions" className="back-link">
+            <span className="back-icon">←</span>
+            <span className="back-text">Mes séances</span>
+          </Link>
+          <div className="session-status-badge" data-status={session.status}>
+            {sessionStatusLabel}
+          </div>
+        </div>
+        <h1 className="session-main-title">{session.title}</h1>
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '0' }}>
+      <div className="exercises-timeline">
         {session.exercises.map((ex, index) => (
-          <div key={ex._id} className="card session-exercise-card" style={{ display: 'flex', flexWrap: 'wrap', gap: '24px', padding: '24px', alignItems: 'flex-start' }}>
-            {ex.videoPath && (
-              <div className="session-video-wrap" style={{ flex: '1 1 360px', width: '100%', maxWidth: '640px', background: '#000', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}>
-                {shouldUseEmbedPlayer(ex.videoPath) ? (
-                  <div className="session-video-box">
-                    <iframe
-                      className="session-video-embed"
-                      src={toEmbedSrc(ex.videoPath)}
-                      title={ex.title}
-                      frameBorder="0"
-                      loading="lazy"
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                      allowFullScreen
-                    />
-                  </div>
-                ) : (
-                  <video 
-                    className="session-video-player"
-                    controls 
-                    preload="metadata"
-                    src={resolveVideoSrc(ex.videoPath)} 
-                  />
-                )}
-              </div>
-            )}
+          <div key={ex._id} className="exercise-card">
+            <div className="exercise-index">Exercice {index + 1}</div>
             
-            <div className="session-exercise-content" style={{ flex: '2 1 300px' }}>
-              <div style={{ color: 'var(--text-muted)', fontSize: '12px', fontWeight: 'bold', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '1px' }}>Exercice {index + 1}</div>
-              <h2 style={{ margin: '0 0 12px 0', fontSize: '1.25rem', color: 'var(--text)' }}>{ex.title}</h2>
-              <p style={{ margin: '0 0 16px 0', fontSize: '14px', color: '#4a5568', lineHeight: '1.6' }}>{ex.description}</p>
-              
-              <div className="session-meta-row" style={{ display: 'flex', gap: '16px', marginBottom: '24px' }}>
-                <span style={{ display: 'inline-flex', alignItems: 'center', background: '#f8f9fa', padding: '6px 12px', borderRadius: '20px', fontSize: '13px', fontWeight: '500', color: 'var(--primary)' }}>⏱ {ex.duration} secondes</span>
-                <span style={{ display: 'inline-flex', alignItems: 'center', background: '#f8f9fa', padding: '6px 12px', borderRadius: '20px', fontSize: '13px', fontWeight: '500', color: 'var(--primary)' }}>🔄 {ex.repetitions} répétitions</span>
-              </div>
-              
-              {session.status !== 'completed' ? (
-                <div className="session-validation-row" style={{ display: 'flex', gap: '12px' }}>
-                  <button onClick={() => validateExercise(ex._id, 'fait')} className="btn" style={{ flex: 1, padding: '12px', fontSize: '14px', background: ex.validationStatus === 'fait' ? 'var(--primary)' : '#e9ecef', color: ex.validationStatus === 'fait' ? 'white' : 'var(--text)', boxShadow: 'none' }}>✓ J'ai réussi</button>
-                  <button onClick={() => validateExercise(ex._id, 'non fait')} className="btn" style={{ flex: 1, padding: '12px', fontSize: '14px', background: ex.validationStatus === 'non fait' ? '#e53935' : '#e9ecef', color: ex.validationStatus === 'non fait' ? 'white' : 'var(--text)', boxShadow: 'none' }}>✗ Trop difficile</button>
-                </div>
-              ) : (
-                <div style={{ fontSize: '14px', fontWeight: '600', padding: '12px', borderRadius: '8px', background: ex.validationStatus === 'fait' ? '#e8f5e9' : '#ffebee', color: ex.validationStatus === 'fait' ? 'var(--primary)' : '#e53935', textAlign: 'center' }}>
-                  {ex.validationStatus === 'fait' ? 'Exercice accompli avec succès ! 🎉' : 'Exercice manqué lors de cette séance.'}
+            <div className="exercise-layout">
+              {ex.videoPath && (
+                <div className="exercise-video-section">
+                  <VideoPlayer videoPath={ex.videoPath} title={ex.title} />
                 </div>
               )}
+              
+              <div className="exercise-info-section">
+                <h2 className="exercise-title">{ex.title}</h2>
+                <p className="exercise-description">{ex.description}</p>
+                
+                <div className="exercise-stats">
+                  <div className="stat-pill">
+                    <span className="stat-icon">⏱</span>
+                    <span className="stat-value">{ex.duration}s</span>
+                  </div>
+                  <div className="stat-pill">
+                    <span className="stat-icon">🔄</span>
+                    <span className="stat-value">{ex.repetitions} reps</span>
+                  </div>
+                </div>
+                
+                <div className="exercise-actions">
+                  {session.status !== 'completed' ? (
+                    <div className="validation-buttons">
+                      <button 
+                        onClick={() => validateExercise(ex._id, 'fait')} 
+                        className={`action-btn success-btn ${ex.validationStatus === 'fait' ? 'active' : ''}`}
+                      >
+                        <span className="btn-icon">✓</span>
+                        J'ai réussi
+                      </button>
+                      <button 
+                        onClick={() => validateExercise(ex._id, 'non fait')} 
+                        className={`action-btn fail-btn ${ex.validationStatus === 'non fait' ? 'active' : ''}`}
+                      >
+                        <span className="btn-icon">✗</span>
+                        Trop difficile
+                      </button>
+                    </div>
+                  ) : (
+                    <div className={`completion-status ${ex.validationStatus}`}>
+                      {ex.validationStatus === 'fait' ? (
+                        <><span>✓</span> Exercice accompli !</>
+                      ) : (
+                        <><span>✗</span> Pas effectué</>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
         ))}
       </div>
 
       {session.status !== 'completed' && (
-        <div className="session-complete-row" style={{ marginTop: '24px', display: 'flex', justifyContent: 'flex-end' }}>
-          <button onClick={completeSession} disabled={!allCompleted} className="btn" style={{ padding: '14px 32px', fontSize: '16px', opacity: allCompleted ? 1 : 0.4 }}>
-            Valider
-          </button>
+        <div className="sticky-footer">
+          <div className="footer-content">
+            <div className="completion-progress">
+              {session.exercises.filter(ex => ex.validationStatus !== 'pending').length} / {session.exercises.length} terminés
+            </div>
+            <button 
+              onClick={completeSession} 
+              disabled={!allCompleted} 
+              className="btn btn-primary finish-btn"
+            >
+              Terminer la séance
+            </button>
+          </div>
         </div>
       )}
 
       <style>{`
-        .session-video-wrap {
-          min-width: 280px;
+        .session-header-container {
+          margin-bottom: 32px;
         }
 
-        .session-video-box {
+        .session-header-top {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 12px;
+        }
+
+        .back-link {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          color: var(--text-muted);
+          font-weight: 500;
+          font-size: 14px;
+          transition: color 0.2s;
+        }
+
+        .back-link:hover {
+          color: var(--primary);
+        }
+
+        .session-status-badge {
+          padding: 6px 14px;
+          border-radius: 20px;
+          font-size: 12px;
+          font-weight: 700;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+        }
+
+        .session-status-badge[data-status="completed"] {
+          background: #e1f7f1;
+          color: #0d9488;
+        }
+
+        .session-status-badge[data-status="in_progress"] {
+          background: #fff7ed;
+          color: #c2410c;
+        }
+
+        .session-status-badge:not([data-status="completed"]):not([data-status="in_progress"]) {
+          background: #f1f5f9;
+          color: #475569;
+        }
+
+        .session-main-title {
+          font-size: 2.2rem;
+          color: var(--text);
+          margin: 0;
+          line-height: 1.2;
+        }
+
+        .exercises-timeline {
+          display: flex;
+          flex-direction: column;
+          gap: 32px;
+          padding-bottom: 100px;
+        }
+
+        .exercise-card {
+          background: white;
+          border-radius: 24px;
+          padding: 32px;
+          box-shadow: 0 10px 25px rgba(0,0,0,0.03);
+          border: 1px solid rgba(0,0,0,0.02);
+          position: relative;
+          transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .exercise-card:hover {
+          transform: translateY(-4px);
+          box-shadow: 0 15px 35px rgba(0,0,0,0.06);
+        }
+
+        .exercise-index {
+          position: absolute;
+          top: -12px;
+          left: 32px;
+          background: var(--primary);
+          color: white;
+          padding: 4px 16px;
+          border-radius: 20px;
+          font-size: 12px;
+          font-weight: 700;
+          box-shadow: 0 4px 12px rgba(88, 201, 207, 0.3);
+        }
+
+        .exercise-layout {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 40px;
+          align-items: start;
+        }
+
+        .exercise-video-section {
           width: 100%;
-          min-height: 240px;
-          aspect-ratio: 16 / 9;
-          background: #000;
         }
 
-        .session-video-embed,
-        .session-video-player {
-          display: block;
-          width: 100%;
-          border: 0;
-          background: #000;
+        .exercise-info-section {
+          display: flex;
+          flex-direction: column;
         }
 
-        .session-video-embed {
-          height: 100%;
+        .exercise-title {
+          font-size: 1.75rem;
+          margin: 0 0 16px 0;
+          color: var(--text);
         }
 
-        .session-video-player {
-          height: auto;
-          max-height: min(70vh, 520px);
-          object-fit: contain;
+        .exercise-description {
+          color: #64748b;
+          font-size: 16px;
+          line-height: 1.6;
+          margin-bottom: 24px;
         }
 
-        @media (max-width: 900px) {
-          .session-header {
-            flex-wrap: wrap;
-            align-items: center;
-          }
+        .exercise-stats {
+          display: flex;
+          gap: 12px;
+          margin-bottom: 32px;
+        }
 
-          .session-exercise-card {
-            gap: 16px !important;
-            padding: 18px !important;
-          }
+        .stat-pill {
+          background: #f8fafc;
+          padding: 8px 16px;
+          border-radius: 12px;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          font-weight: 600;
+          color: #475569;
+          font-size: 14px;
+          border: 1px solid #f1f5f9;
+        }
 
-          .session-video-wrap,
-          .session-exercise-content {
-            flex: 1 1 100% !important;
-            max-width: 100% !important;
-          }
+        .stat-icon {
+          font-size: 16px;
+        }
 
-          .session-meta-row,
-          .session-validation-row {
-            flex-wrap: wrap;
+        .validation-buttons {
+          display: flex;
+          gap: 12px;
+        }
+
+        .action-btn {
+          flex: 1;
+          padding: 14px;
+          border-radius: 14px;
+          border: 2px solid transparent;
+          font-weight: 600;
+          font-size: 15px;
+          cursor: pointer;
+          transition: all 0.2s;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+        }
+
+        .success-btn {
+          background: #f0fdf4;
+          color: #166534;
+        }
+
+        .success-btn:hover {
+          background: #dcfce7;
+        }
+
+        .success-btn.active {
+          background: #16a34a;
+          color: white;
+          box-shadow: 0 8px 20px rgba(22, 163, 74, 0.25);
+        }
+
+        .fail-btn {
+          background: #fef2f2;
+          color: #991b1b;
+        }
+
+        .fail-btn:hover {
+          background: #fee2e2;
+        }
+
+        .fail-btn.active {
+          background: #dc2626;
+          color: white;
+          box-shadow: 0 8px 20px rgba(220, 38, 38, 0.25);
+        }
+
+        .completion-status {
+          padding: 16px;
+          border-radius: 14px;
+          text-align: center;
+          font-weight: 600;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 10px;
+        }
+
+        .completion-status.fait {
+          background: #f0fdf4;
+          color: #166534;
+        }
+
+        .completion-status.non.fait {
+          background: #fef2f2;
+          color: #991b1b;
+        }
+
+        .sticky-footer {
+          position: fixed;
+          bottom: 0;
+          left: 0;
+          right: 0;
+          background: rgba(255, 255, 255, 0.8);
+          backdrop-filter: blur(20px);
+          padding: 20px 32px;
+          border-top: 1px solid rgba(0,0,0,0.05);
+          box-shadow: 0 -10px 40px rgba(0,0,0,0.05);
+          z-index: 1000;
+        }
+
+        .footer-content {
+          max-width: 1200px;
+          margin: 0 auto;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+
+        .completion-progress {
+          font-weight: 600;
+          color: var(--text-muted);
+        }
+
+        .finish-btn {
+          padding: 16px 40px;
+          border-radius: 16px;
+          font-size: 16px;
+          font-weight: 700;
+        }
+
+        @media (max-width: 1024px) {
+          .exercise-layout {
+            grid-template-columns: 1fr;
+            gap: 24px;
+          }
+          
+          .exercise-card {
+            padding: 24px;
           }
         }
 
-        @media (max-width: 640px) {
-          .session-header h1 {
-            width: 100%;
-            font-size: 1.55rem;
+        @media (max-width: 768px) {
+          .session-main-title {
+            font-size: 1.75rem;
+          }
+          
+          .exercise-title {
+            font-size: 1.4rem;
           }
 
-          .session-video-box {
-            min-height: 220px;
+          .exercise-card {
+            border-radius: 20px;
           }
 
-          .session-meta-row {
-            gap: 10px !important;
-            margin-bottom: 16px !important;
+          .sticky-footer {
+            padding: 16px;
           }
 
-          .session-meta-row span {
-            width: 100%;
-            justify-content: center;
-          }
-
-          .session-validation-row {
+          .footer-content {
             flex-direction: column;
+            gap: 12px;
           }
 
-          .session-complete-row {
-            justify-content: stretch !important;
-          }
-
-          .session-complete-row .btn {
+          .finish-btn {
             width: 100%;
+          }
+        }
+
+        @media (max-width: 480px) {
+          .exercise-stats {
+            flex-direction: column;
+            gap: 8px;
+          }
+          
+          .stat-pill {
+            width: 100%;
+          }
+
+          .validation-buttons {
+            flex-direction: column;
           }
         }
       `}</style>
     </Layout>
   );
 }
+
 export default PatientSessionDetail;
