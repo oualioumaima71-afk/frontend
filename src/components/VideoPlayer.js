@@ -72,6 +72,7 @@ const VideoPlayer = ({ videoPath, title }) => {
 
   useEffect(() => {
     let timeout;
+    const container = containerRef.current;
     const handleMouseMove = () => {
       setShowControls(true);
       clearTimeout(timeout);
@@ -80,11 +81,11 @@ const VideoPlayer = ({ videoPath, title }) => {
       }, 3000);
     };
 
-    if (containerRef.current) {
-      containerRef.current.addEventListener('mousemove', handleMouseMove);
+    if (container) {
+      container.addEventListener('mousemove', handleMouseMove);
     }
     return () => {
-      if (containerRef.current) containerRef.current.removeEventListener('mousemove', handleMouseMove);
+      if (container) container.removeEventListener('mousemove', handleMouseMove);
     };
   }, [isPlaying]);
 
