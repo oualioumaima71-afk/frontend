@@ -273,6 +273,16 @@ function PatientSessionDetail() {
           align-items: start;
         }
 
+        /* Empêche la grille de laisser la vidéo dépasser (min-width:auto par défaut) */
+        .exercise-layout > * {
+          min-width: 0;
+        }
+
+        .exercise-video-section {
+          width: 100%;
+          max-width: 100%;
+        }
+
         .exercise-title {
           font-size: 1.8rem;
           font-weight: 800;

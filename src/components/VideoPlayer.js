@@ -177,6 +177,8 @@ const VideoPlayer = ({ videoPath, title }) => {
         .vpc {
           position: relative;
           width: 100%;
+          max-width: 100%;
+          box-sizing: border-box;
           aspect-ratio: 4 / 3;
           background: #000000;
           border-radius: 16px;
@@ -233,7 +235,22 @@ const VideoPlayer = ({ videoPath, title }) => {
           inset: 0;
           width: 100%;
           height: 100%;
+          max-width: 100%;
           cursor: pointer;
+        }
+
+        /* react-player : le wrapper interne ne doit pas forcer une largeur > conteneur */
+        .vpc-player-wrapper > div {
+          width: 100% !important;
+          height: 100% !important;
+          max-width: 100% !important;
+        }
+
+        .vpc-player-wrapper video {
+          width: 100% !important;
+          height: 100% !important;
+          max-width: 100% !important;
+          object-fit: contain;
         }
 
         /* ── Overlay controls ── */
