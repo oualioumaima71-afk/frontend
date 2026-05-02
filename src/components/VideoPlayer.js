@@ -91,9 +91,15 @@ const VideoPlayer = ({ videoPath, title }) => {
 
   const togglePlay = () => {
     if (videoRef.current) {
-      if (isPlaying) videoRef.current.pause();
-      else videoRef.current.play();
-      setIsPlaying(!isPlaying);
+      if (isPlaying) {
+        videoRef.current.pause();
+        setIsPlaying(false);
+      } else {
+        videoRef.current.play();
+        setIsPlaying(true);
+        // Automatically enter fullscreen when starting playback as requested
+        handleFullscreen();
+      }
     }
   };
 
