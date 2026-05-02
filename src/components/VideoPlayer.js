@@ -88,16 +88,25 @@ const VideoPlayer = ({ videoPath, title }) => {
     };
   }, [isPlaying]);
 
-  const togglePlay = () => {
+  const togglePlay = async () => {
     if (videoRef.current) {
       if (isPlaying) {
         videoRef.current.pause();
         setIsPlaying(false);
       } else {
+        // Automatically enter fullscreen when starting playback as requested
+        try {
+          if (containerRef.current?.requestFullscreen) {
+            await containerRef.current.requestFullscreen();
+          } else if (containerRef.current?.webkitRequestFullscreen) {
+            containerRef.current.webkitRequestFullscreen();
+          }
+        } catch (err) {
+          console.warn('Fullscreen blocked or failed:', err);
+        }
+        
         videoRef.current.play();
         setIsPlaying(true);
-        // Automatically enter fullscreen when starting playback as requested
-        handleFullscreen();
       }
     }
   };
@@ -368,6 +377,12 @@ const VideoPlayer = ({ videoPath, title }) => {
           
           .modern-video-container:has(.embed-wrapper) {
             aspect-ratio: 4 / 3;
+          }
+
+          /* On mobile, reset the crop — it can hide the video entirely */
+          .embed-wrapper.is-drive .modern-iframe {
+            height: 100%;
+            margin-top: 0;
           }
 
           .big-play-btn {
