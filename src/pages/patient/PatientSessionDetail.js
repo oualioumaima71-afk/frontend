@@ -4,6 +4,8 @@ import api from '../../api';
 import Layout from '../../components/Layout';
 import VideoPlayer from '../../components/VideoPlayer';
 
+const isDriveVideoUrl = (path) => String(path || '').toLowerCase().includes('drive.google.com');
+
 function PatientSessionDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -71,7 +73,9 @@ function PatientSessionDetail() {
               
               <div className="exercise-layout">
                 {ex.videoPath && (
-                  <div className="exercise-video-section">
+                  <div
+                    className={`exercise-video-section${isDriveVideoUrl(ex.videoPath) ? ' exercise-video-section--drive' : ''}`}
+                  >
                     <VideoPlayer videoPath={ex.videoPath} title={ex.title} />
                   </div>
                 )}
@@ -95,6 +99,7 @@ function PatientSessionDetail() {
                     {session.status !== 'completed' ? (
                       <div className="validation-buttons">
                         <button 
+                          type="button"
                           onClick={() => validateExercise(ex._id, 'fait')} 
                           className={`action-btn success-btn ${ex.validationStatus === 'fait' ? 'active' : ''}`}
                         >
@@ -102,6 +107,7 @@ function PatientSessionDetail() {
                           J'ai réussi
                         </button>
                         <button 
+                          type="button"
                           onClick={() => validateExercise(ex._id, 'non fait')} 
                           className={`action-btn fail-btn ${ex.validationStatus === 'non fait' ? 'active' : ''}`}
                         >
@@ -283,6 +289,69 @@ function PatientSessionDetail() {
           max-width: 100%;
         }
 
+        .validation-buttons {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 12px;
+        }
+
+        .action-btn {
+          flex: 1;
+          min-width: min(100%, 160px);
+          padding: 12px 18px;
+          border-radius: 14px;
+          font-weight: 700;
+          font-size: 15px;
+          cursor: pointer;
+          border: 2px solid transparent;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.2s ease, color 0.2s ease;
+          font-family: inherit;
+          box-sizing: border-box;
+        }
+
+        .action-btn:active:not(:disabled) {
+          transform: scale(0.98);
+        }
+
+        .success-btn {
+          background: linear-gradient(135deg, rgba(88, 201, 207, 0.14) 0%, rgba(168, 157, 245, 0.12) 100%);
+          color: var(--primary);
+          border-color: rgba(88, 201, 207, 0.35);
+        }
+
+        .success-btn:hover {
+          border-color: var(--primary);
+          box-shadow: 0 6px 16px rgba(88, 201, 207, 0.2);
+        }
+
+        .success-btn.active {
+          background: var(--primary);
+          color: white;
+          border-color: var(--primary);
+          box-shadow: 0 8px 20px rgba(88, 201, 207, 0.35);
+        }
+
+        .fail-btn {
+          background: #fef2f2;
+          color: #b91c1c;
+          border-color: rgba(185, 28, 28, 0.28);
+        }
+
+        .fail-btn:hover {
+          border-color: rgba(185, 28, 28, 0.45);
+          box-shadow: 0 4px 14px rgba(185, 28, 28, 0.12);
+        }
+
+        .fail-btn.active {
+          background: #dc2626;
+          color: white;
+          border-color: #dc2626;
+        }
+
         .exercise-title {
           font-size: 1.8rem;
           font-weight: 800;
@@ -381,6 +450,20 @@ function PatientSessionDetail() {
           .exercise-title { font-size: 1.4rem; }
           .exercise-index { left: 24px; }
           .back-link { padding: 6px 12px; font-size: 13px; }
+          /* Vidéo Drive : utilise toute la largeur utile de la carte (pas de marge latérale sur le bloc vidéo) */
+          .exercise-video-section--drive {
+            margin-left: -24px;
+            margin-right: -24px;
+            width: calc(100% + 48px);
+            max-width: none;
+          }
+          .validation-buttons {
+            flex-direction: column;
+          }
+          .action-btn {
+            min-width: 0;
+            width: 100%;
+          }
         }
       `}</style>
     </Layout>

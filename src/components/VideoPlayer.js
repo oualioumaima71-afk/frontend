@@ -237,23 +237,7 @@ const VideoPlayer = ({ videoPath, title }) => {
           display: block;
         }
 
-        /* Desktop : léger crop des bordures Drive */
-        @media (min-width: 769px) {
-          .vpc--drive .vpc-iframe {
-            height: 118%;
-            margin-top: -9%;
-          }
-        }
-
-        /* Mobile : agrandir l’iframe pour réduire les marges internes Drive (contenu centré, overflow caché) */
-        @media (max-width: 768px) {
-          .vpc--drive .vpc-iframe {
-            width: 108%;
-            height: 112%;
-            margin-left: -4%;
-            margin-top: -5%;
-          }
-        }
+        /* Drive : pas de transform/zoom — ça décale la barre et les boutons dans l’iframe (cross-origin). */
 
         /* ── ReactPlayer wrapper ── */
         .vpc-player-wrapper {
