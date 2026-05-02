@@ -13,13 +13,33 @@ const resolveVideoSrc = (videoPath) => {
   return `${BACKEND_ORIGIN}${normalizedPath}`;
 };
 
+const getGoogleDriveFileId = (input = '') => {
+  const url = String(input || '').trim();
+  if (!url.toLowerCase().includes('drive.google.com')) return '';
+
+  try {
+    const parsedUrl = new URL(url);
+    const pathMatch = parsedUrl.pathname.match(/\/file\/d\/([^/]+)/i);
+    if (pathMatch) return decodeURIComponent(pathMatch[1]);
+    return parsedUrl.searchParams.get('id') || '';
+  } catch (e) {
+    const pathMatch = url.match(/\/file\/d\/([^/?#]+)/i);
+    if (pathMatch) return pathMatch[1];
+    const idMatch = url.match(/[?&]id=([^&#]+)/i);
+    return idMatch ? idMatch[1] : '';
+  }
+};
+
 const toEmbedSrc = (input = '') => {
   const url = String(input || '').trim();
   if (!url) return '';
 
-  // Google Drive
-  if (url.includes('drive.google.com')) {
-    // Convert /view or /edit to /preview for stable embedding
+  const driveFileId = getGoogleDriveFileId(url);
+  if (driveFileId) {
+    return `https://drive.google.com/file/d/${driveFileId}/preview`;
+  }
+
+  if (url.toLowerCase().includes('drive.google.com')) {
     return url.replace(/\/(view|edit)(\?.*)?$/, '/preview');
   }
 
@@ -29,7 +49,17 @@ const toEmbedSrc = (input = '') => {
     return `https://www.youtube-nocookie.com/embed/${youtubeMatch[1]}?rel=0`;
   }
 
+  const vimeoMatch = url.match(/vimeo\.com\/(?:video\/)?(\d+)/i);
+  if (vimeoMatch) {
+    return `https://player.vimeo.com/video/${vimeoMatch[1]}`;
+  }
+
   return url;
+};
+
+const shouldUseEmbedPlayer = (videoPath = '') => {
+  const url = String(videoPath || '').toLowerCase();
+  return url.includes('drive.google.com') || url.includes('youtube.com') || url.includes('youtu.be') || url.includes('vimeo.com');
 };
 
 function PatientSessionDetail() {
@@ -87,24 +117,24 @@ function PatientSessionDetail() {
         {session.exercises.map((ex, index) => (
           <div key={ex._id} className="card session-exercise-card" style={{ display: 'flex', flexWrap: 'wrap', gap: '24px', padding: '24px', alignItems: 'flex-start' }}>
             {ex.videoPath && (
-              <div className="session-video-wrap" style={{ flex: '1 1 250px', background: '#000', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}>
-                {(ex.videoPath.includes('drive.google.com') || ex.videoPath.includes('youtube.com') || ex.videoPath.includes('youtu.be') || ex.videoPath.includes('vimeo')) ? (
-                  <iframe
-                    width="100%"
-                    height="200"
-                    src={toEmbedSrc(ex.videoPath)}
-                    title={ex.title}
-                    frameBorder="0"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                    allowFullScreen
-                    style={{display:'block'}}
-                  />
+              <div className="session-video-wrap" style={{ flex: '1 1 360px', width: '100%', maxWidth: '640px', background: '#000', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}>
+                {shouldUseEmbedPlayer(ex.videoPath) ? (
+                  <div className="session-video-box">
+                    <iframe
+                      className="session-video-embed"
+                      src={toEmbedSrc(ex.videoPath)}
+                      title={ex.title}
+                      frameBorder="0"
+                      loading="lazy"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                      allowFullScreen
+                    />
+                  </div>
                 ) : (
                   <video 
-                    width="100%" 
-                    height="200" 
+                    className="session-video-player"
                     controls 
-                    style={{display:'block', objectFit: 'cover'}} 
+                    preload="metadata"
                     src={resolveVideoSrc(ex.videoPath)} 
                   />
                 )}
@@ -145,6 +175,35 @@ function PatientSessionDetail() {
       )}
 
       <style>{`
+        .session-video-wrap {
+          min-width: 280px;
+        }
+
+        .session-video-box {
+          width: 100%;
+          min-height: 240px;
+          aspect-ratio: 16 / 9;
+          background: #000;
+        }
+
+        .session-video-embed,
+        .session-video-player {
+          display: block;
+          width: 100%;
+          border: 0;
+          background: #000;
+        }
+
+        .session-video-embed {
+          height: 100%;
+        }
+
+        .session-video-player {
+          height: auto;
+          max-height: min(70vh, 520px);
+          object-fit: contain;
+        }
+
         @media (max-width: 900px) {
           .session-header {
             flex-wrap: wrap;
@@ -159,6 +218,7 @@ function PatientSessionDetail() {
           .session-video-wrap,
           .session-exercise-content {
             flex: 1 1 100% !important;
+            max-width: 100% !important;
           }
 
           .session-meta-row,
@@ -171,6 +231,10 @@ function PatientSessionDetail() {
           .session-header h1 {
             width: 100%;
             font-size: 1.55rem;
+          }
+
+          .session-video-box {
+            min-height: 220px;
           }
 
           .session-meta-row {
