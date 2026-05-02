@@ -177,7 +177,7 @@ const VideoPlayer = ({ videoPath, title }) => {
         .vpc {
           position: relative;
           width: 100%;
-          aspect-ratio: 16 / 9;
+          aspect-ratio: 4 / 3;
           background: #000d1a;
           border-radius: 16px;
           overflow: hidden;
