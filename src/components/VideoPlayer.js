@@ -121,7 +121,7 @@ const VideoPlayer = ({ videoPath, title }) => {
       {isLoading && <div className="video-loader"><div className="spinner"></div></div>}
       
       {isEmbed ? (
-        <div className="embed-wrapper">
+        <div className={`embed-wrapper ${videoPath.includes('drive.google.com') ? 'is-drive' : ''}`}>
           <iframe
             className="modern-iframe"
             src={toEmbedSrc(videoPath)}
@@ -221,6 +221,19 @@ const VideoPlayer = ({ videoPath, title }) => {
           display: flex;
           align-items: center;
           justify-content: center;
+          position: relative;
+        }
+
+        .embed-wrapper {
+          overflow: hidden;
+        }
+
+        /* Specific tweak for Drive to hide bars */
+        .embed-wrapper.is-drive .modern-iframe {
+          width: 100%;
+          height: 120%; /* Even taller to be sure */
+          margin-top: -10%; /* Crop both bars */
+          pointer-events: auto;
         }
 
         .modern-iframe {
